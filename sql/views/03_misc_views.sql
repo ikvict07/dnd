@@ -46,10 +46,11 @@ SELECT
     et.value AS modifier_value,
     et.duration_rounds,
     COUNT(e.id) AS active_instances,
-    COUNT(DISTINCT e.character_id) AS affected_characters,
+    COUNT(DISTINCT cue.character_id) AS affected_characters,
     AVG(e.rounds_left) AS avg_remaining_rounds
 FROM 
     effect_template et
     LEFT JOIN effect e ON et.id = e.effect_template_id
+    LEFT JOIN character_under_effects cue ON e.id = cue.under_effects_id
 GROUP BY 
     et.id, et.effect_name, et.effect, et.affected_attribute_type, et.value, et.duration_rounds;

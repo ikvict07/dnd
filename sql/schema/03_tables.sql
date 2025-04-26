@@ -1,6 +1,13 @@
 -- DnD Combat System Database Schema - Tables and Constraints
 
 -- Tables
+
+-- Specify schema for DnD Combat System
+create schema if not exists dnd;
+
+-- Set the schema as the default for creating tables
+set search_path to dnd;
+
 create table item
 (
     type   smallint,

@@ -2,7 +2,7 @@
 
 -- View: Combat Activity Summary
 CREATE VIEW combat_activity_summary AS
-SELECT 
+SELECT
     cl.actor_id,
     c.name AS actor_name,
     COUNT(*) AS total_actions,
@@ -12,15 +12,15 @@ SELECT
     ROUND(COUNT(CASE WHEN cl.impact > 0 THEN 1 END)::numeric / COUNT(*)::numeric * 100, 2) AS hit_percentage,
     AVG(cl.impact) FILTER (WHERE cl.impact > 0) AS avg_impact_per_hit,
     MAX(cl.impact) AS max_impact
-FROM 
+FROM
     combat_log cl
-    JOIN character c ON cl.actor_id = c.id
-GROUP BY 
+        JOIN character c ON cl.actor_id = c.id
+GROUP BY
     cl.actor_id, c.name;
 
 -- View: Damage Received Summary
 CREATE VIEW damage_received_summary AS
-SELECT 
+SELECT
     cl.target_id,
     c.name AS target_name,
     COUNT(*) AS times_targeted,
@@ -28,36 +28,38 @@ SELECT
     SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'HEALING') AS total_healing_received,
     AVG(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS avg_damage_per_hit,
     MAX(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS max_damage_received
-FROM 
+FROM
     combat_log cl
-    JOIN character c ON cl.target_id = c.id
-    LEFT JOIN spell s ON cl.action_id = s.id
-GROUP BY 
+        JOIN character c ON cl.target_id = c.id
+        LEFT JOIN spell s ON cl.action_id = s.id
+GROUP BY
     cl.target_id, c.name;
 
 -- View: Current Combat State
 CREATE VIEW current_combat_state AS
-SELECT 
+SELECT
     l.id AS location_id,
     l.name AS location_name,
     r.id AS round_id,
-    r.round_number,
+    r.index,
     COUNT(DISTINCT rp.participants_id) AS active_participants,
     COUNT(DISTINCT cl.id) AS actions_this_round
-FROM 
+FROM
     location l
-    JOIN combat_round r ON l.id = r.location_id AND r.is_active = TRUE
-    LEFT JOIN round_participants rp ON r.id = rp.round_id
-    LEFT JOIN round_logs rl ON r.id = rl.round_id
-    LEFT JOIN combat_log cl ON rl.logs_id = cl.id
-GROUP BY 
-    l.id, l.name, r.id, r.round_number;
+        JOIN combat c ON l.id = c.location_id
+        JOIN combat_combat_rounds cr ON c.id = cr.combat_id
+        JOIN round r ON cr.combat_rounds_id = r.id AND r.is_finished = false
+        LEFT JOIN round_participants rp ON r.id = rp.round_id
+        LEFT JOIN round_logs rl ON r.id = rl.round_id
+        LEFT JOIN combat_log cl ON rl.logs_id = cl.id
+GROUP BY
+    l.id, l.name, r.id, r.index;
 
 -- View: Combat Round Summary
 CREATE VIEW combat_round_summary AS
-SELECT 
+SELECT
     r.id AS round_id,
-    r.round_number,
+    r.index,
     l.id AS location_id,
     l.name AS location_name,
     COUNT(DISTINCT cl.actor_id) AS active_characters,
@@ -65,11 +67,13 @@ SELECT
     SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS total_damage_dealt,
     SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'HEALING') AS total_healing_done,
     SUM(cl.action_points_spent) AS total_ap_spent
-FROM 
+FROM
     round r
-    JOIN location l ON r.location_id = l.id
-    LEFT JOIN round_logs rl ON r.id = rl.round_id
-    LEFT JOIN combat_log cl ON rl.logs_id = cl.id
-    LEFT JOIN spell s ON cl.action_id = s.id
-GROUP BY 
-    r.id, r.round_number, l.id, l.name;
+        JOIN combat_combat_rounds cr ON r.id = cr.combat_rounds_id
+        JOIN combat c ON cr.combat_id = c.id
+        JOIN location l ON c.location_id = l.id
+        LEFT JOIN round_logs rl ON r.id = rl.round_id
+        LEFT JOIN combat_log cl ON rl.logs_id = cl.id
+        LEFT JOIN spell s ON cl.action_id = s.id
+GROUP BY
+    r.id, r.index, l.id, l.name;

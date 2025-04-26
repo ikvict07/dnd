@@ -1,7 +1,7 @@
 -- DnD Combat System Database Schema - Character Views
 
 -- View: Character Stats Summary
-CREATE VIEW character_stats_summary AS
+CREATE or replace VIEW character_stats_summary AS
 SELECT 
     c.id AS character_id,
     c.name AS character_name,
@@ -25,7 +25,7 @@ FROM
     LEFT JOIN armor_set a ON c.armor_set_id = a.id;
 
 -- View: Character Attributes
-CREATE VIEW character_attributes_view AS
+CREATE or replace VIEW character_attributes_view AS
 SELECT 
     c.id AS character_id,
     c.name AS character_name,
@@ -37,13 +37,13 @@ FROM
     JOIN attribute a ON ca.attributes_id = a.id;
 
 -- View: Character Inventory Summary
-CREATE VIEW character_inventory_summary AS
+CREATE or replace VIEW character_inventory_summary AS
 SELECT 
     c.id AS character_id,
     c.name AS character_name,
     i.capacity AS max_capacity,
-    i.current_size AS current_used,
-    (i.capacity - i.current_size) AS available_space,
+    get_inventory_weight(i.id::integer) AS current_used,
+    (i.capacity - get_inventory_weight(i.id::integer)) AS available_space,
     COUNT(it.id) AS item_count,
     SUM(CASE WHEN it.type = 0 THEN 1 ELSE 0 END) AS armor_count,
     SUM(CASE WHEN it.type = 1 THEN 1 ELSE 0 END) AS weapon_count,
@@ -55,4 +55,4 @@ FROM
     LEFT JOIN inventory_items ii ON i.id = ii.inventory_id
     LEFT JOIN item it ON ii.items_id = it.id
 GROUP BY 
-    c.id, c.name, i.capacity, i.current_size;
+    c.id, c.name, i.capacity, get_inventory_weight(i.id::integer);
