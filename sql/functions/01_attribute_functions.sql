@@ -8,7 +8,7 @@ BEGIN
     FROM attribute join character_attributes on attribute.id = character_attributes.attributes_id
     WHERE character_id = p_character_id AND attribute_type = p_attribute_type;
 
-    RETURN COALESCE(v_value, 0);
+    RETURN coalesce(v_value, 0);
 END;
 $$ language plpgsql;
 

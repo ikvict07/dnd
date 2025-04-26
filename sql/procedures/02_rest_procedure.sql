@@ -1,45 +1,45 @@
 -- Function to allow a character to rest outside combat
-CREATE OR REPLACE FUNCTION sp_rest_character(
-    p_character_id INTEGER
-) RETURNS VOID AS $$
-DECLARE
-    v_is_pvp BOOLEAN;
-    v_healing_spell_id INTEGER;
-    v_current_ap INTEGER;
-    v_class_id BIGINT;
-    v_action_points_multiplier DOUBLE PRECISION;
-BEGIN
+create or replace function sp_rest_character(
+    p_character_id integer
+) returns void as $$
+declare
+    v_is_pvp boolean;
+    v_healing_spell_id integer;
+    v_current_ap integer;
+    v_class_id bigint;
+    v_action_points_multiplier double precision;
+begin
     -- Check if the character is in a non-PvP location
-    SELECT l.is_pvp INTO v_is_pvp
-    FROM character c
-    JOIN location l ON c.location_id = l.id
-    WHERE c.id = p_character_id;
+    select l.is_pvp into v_is_pvp
+    from character c
+             join location l on c.location_id = l.id
+    where c.id = p_character_id;
 
-    IF v_is_pvp THEN
-        RAISE EXCEPTION 'Cannot rest in a PvP location';
-    END IF;
+    if v_is_pvp then
+        raise exception 'Cannot rest in a PvP location';
+    end if;
 
-    SELECT id INTO v_healing_spell_id
-    FROM spell
-    WHERE name = 'Rest' AND is_pvp = FALSE
-    LIMIT 1;
+    select id into v_healing_spell_id
+    from spell
+    where name = 'Rest' and is_pvp = false
+    limit 1;
 
-    IF v_healing_spell_id IS NULL THEN
-        RAISE EXCEPTION 'Rest not found';
-    END IF;
+    if v_healing_spell_id is null then
+        raise exception 'Rest not found';
+    end if;
 
-    SELECT action_points INTO v_current_ap
-    FROM character
-    WHERE id = p_character_id;
+    select action_points into v_current_ap
+    from character
+    where id = p_character_id;
 
-    PERFORM sp_cast_spell(p_character_id, p_character_id, v_healing_spell_id);
+    perform sp_cast_spell(p_character_id, p_character_id, v_healing_spell_id);
 
-    SELECT c.character_class_id, cl.action_points_multiplier
-    INTO v_class_id, v_action_points_multiplier
-    FROM character c
-    JOIN class cl ON c.character_class_id = cl.id
-    WHERE c.id = p_character_id;
-END;
-$$ LANGUAGE plpgsql;
+    select c.character_class_id, cl.action_points_multiplier
+    into v_class_id, v_action_points_multiplier
+    from character c
+             join class cl on c.character_class_id = cl.id
+    where c.id = p_character_id;
+end;
+$$ language plpgsql;
 
-ALTER FUNCTION sp_rest_character(INTEGER) OWNER TO postgres;
+alter function sp_rest_character(integer) owner to postgres;

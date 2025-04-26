@@ -2,133 +2,133 @@
 
 -- View: Combat State
 -- Displays the current round, list of active characters, and their remaining AP.
-CREATE VIEW v_combat_state AS
-SELECT 
-    r.id AS round_id,
-    r.index AS round_number,
+create view v_combat_state as
+select
+    r.id as round_id,
+    r.index as round_number,
     r.is_finished,
-    c.id AS character_id,
-    c.name AS character_name,
-    c.action_points AS remaining_ap,
-    c.hp AS remaining_hp,
-    cl.name AS class_name
-FROM 
+    c.id as character_id,
+    c.name as character_name,
+    c.action_points as remaining_ap,
+    c.hp as remaining_hp,
+    cl.name as class_name
+from
     round r
-    JOIN round_participants rp ON r.id = rp.round_id
-    JOIN character c ON rp.participants_id = c.id
-    LEFT JOIN class cl ON c.character_class_id = cl.id
-WHERE 
-    r.is_finished = FALSE
-ORDER BY 
-    r.id, c.action_points DESC;
+        join round_participants rp on r.id = rp.round_id
+        join character c on rp.participants_id = c.id
+        left join class cl on c.character_class_id = cl.id
+where
+    r.is_finished = false
+order by
+    r.id, c.action_points desc;
 
 -- View: Most Damage
 -- Ranks characters by total damage dealt across all combats.
-CREATE VIEW v_most_damage AS
-SELECT 
-    c.id AS character_id,
-    c.name AS character_name,
-    c.lvl AS character_level,
-    cl.name AS class_name,
-    SUM(cl2.impact) AS total_damage_dealt,
-    COUNT(cl2.id) AS total_attacks,
-    ROUND(SUM(cl2.impact)::numeric / NULLIF(COUNT(cl2.id), 0), 2) AS avg_damage_per_attack,
-    MAX(cl2.impact) AS max_damage_dealt
-FROM 
+create view v_most_damage as
+select
+    c.id as character_id,
+    c.name as character_name,
+    c.lvl as character_level,
+    cl.name as class_name,
+    sum(cl2.impact) as total_damage_dealt,
+    count(cl2.id) as total_attacks,
+    round(sum(cl2.impact)::numeric / nullif(count(cl2.id), 0), 2) as avg_damage_per_attack,
+    max(cl2.impact) as max_damage_dealt
+from
     character c
-    LEFT JOIN class cl ON c.character_class_id = cl.id
-    LEFT JOIN combat_log cl2 ON c.id = cl2.actor_id
-    LEFT JOIN spell s ON cl2.action_id = s.id
-WHERE 
+        left join class cl on c.character_class_id = cl.id
+        left join combat_log cl2 on c.id = cl2.actor_id
+        left join spell s on cl2.action_id = s.id
+where
     s.spell_impact_type = 'DAMAGE'
-GROUP BY 
+group by
     c.id, c.name, c.lvl, cl.name
-ORDER BY 
-    total_damage_dealt DESC;
+order by
+    total_damage_dealt desc;
 
 -- View: Strongest Characters
 -- Lists characters ordered by aggregated performance metrics.
-CREATE VIEW v_strongest_characters AS
-SELECT 
-    c.id AS character_id,
-    c.name AS character_name,
-    c.lvl AS character_level,
-    c.hp AS current_hp,
-    cl.name AS class_name,
+create view v_strongest_characters as
+select
+    c.id as character_id,
+    c.name as character_name,
+    c.lvl as character_level,
+    c.hp as current_hp,
+    cl.name as class_name,
     -- Damage dealt
-    COALESCE(SUM(cl2.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE'), 0) AS total_damage_dealt,
+    coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 'DAMAGE'), 0) as total_damage_dealt,
     -- Healing done
-    COALESCE(SUM(cl2.impact) FILTER (WHERE s.spell_impact_type = 'HEALING'), 0) AS total_healing_done,
+    coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 'HEALING'), 0) as total_healing_done,
     -- Successful attacks
-    COUNT(cl2.id) FILTER (WHERE cl2.impact > 0 AND s.spell_impact_type = 'DAMAGE') AS successful_attacks,
+    count(cl2.id) filter (where cl2.impact > 0 and s.spell_impact_type = 'DAMAGE') as successful_attacks,
     -- Damage received
-    COALESCE((SELECT SUM(cl3.impact) FROM combat_log cl3 
-              JOIN spell s2 ON cl3.action_id = s2.id 
-              WHERE cl3.target_id = c.id AND s2.spell_impact_type = 'DAMAGE'), 0) AS damage_received,
+    coalesce((select sum(cl3.impact) from combat_log cl3
+                                              join spell s2 on cl3.action_id = s2.id
+              where cl3.target_id = c.id and s2.spell_impact_type = 'DAMAGE'), 0) as damage_received,
     -- Performance score (custom formula)
-    COALESCE(SUM(cl2.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE'), 0) + 
-    COALESCE(SUM(cl2.impact) FILTER (WHERE s.spell_impact_type = 'HEALING'), 0) * 0.5 - 
-    COALESCE((SELECT SUM(cl3.impact) FROM combat_log cl3 
-              JOIN spell s2 ON cl3.action_id = s2.id 
-              WHERE cl3.target_id = c.id AND s2.spell_impact_type = 'DAMAGE'), 0) * 0.3 + 
-    c.hp * 0.2 AS performance_score
-FROM 
+    coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 'DAMAGE'), 0) +
+    coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 'HEALING'), 0) * 0.5 -
+    coalesce((select sum(cl3.impact) from combat_log cl3
+                                              join spell s2 on cl3.action_id = s2.id
+              where cl3.target_id = c.id and s2.spell_impact_type = 'DAMAGE'), 0) * 0.3 +
+    c.hp * 0.2 as performance_score
+from
     character c
-    LEFT JOIN class cl ON c.character_class_id = cl.id
-    LEFT JOIN combat_log cl2 ON c.id = cl2.actor_id
-    LEFT JOIN spell s ON cl2.action_id = s.id
-GROUP BY 
+        left join class cl on c.character_class_id = cl.id
+        left join combat_log cl2 on c.id = cl2.actor_id
+        left join spell s on cl2.action_id = s.id
+group by
     c.id, c.name, c.lvl, c.hp, cl.name
-ORDER BY 
-    performance_score DESC;
+order by
+    performance_score desc;
 
 -- View: Combat Damage
 -- Summarizes total damage inflicted in each combat session.
-CREATE VIEW v_combat_damage AS
-SELECT 
-    c.id AS combat_id,
-    l.name AS location_name,
-    COUNT(DISTINCT r.id) AS total_rounds,
-    COUNT(DISTINCT cl.actor_id) AS total_participants,
-    SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS total_damage_dealt,
-    SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'HEALING') AS total_healing_done,
-    ROUND(SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE')::numeric / 
-          NULLIF(COUNT(DISTINCT r.id), 0), 2) AS avg_damage_per_round,
-    MAX(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS max_damage_in_single_action
-FROM 
+create view v_combat_damage as
+select
+    c.id as combat_id,
+    l.name as location_name,
+    count(distinct r.id) as total_rounds,
+    count(distinct cl.actor_id) as total_participants,
+    sum(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as total_damage_dealt,
+    sum(cl.impact) filter (where s.spell_impact_type = 'HEALING') as total_healing_done,
+    round(sum(cl.impact) filter (where s.spell_impact_type = 'DAMAGE')::numeric /
+          nullif(count(distinct r.id), 0), 2) as avg_damage_per_round,
+    max(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as max_damage_in_single_action
+from
     combat c
-    JOIN location l ON c.location_id = l.id
-    JOIN combat_combat_rounds ccr ON c.id = ccr.combat_id
-    JOIN round r ON ccr.combat_rounds_id = r.id
-    JOIN round_logs rl ON r.id = rl.round_id
-    JOIN combat_log cl ON rl.logs_id = cl.id
-    LEFT JOIN spell s ON cl.action_id = s.id
-GROUP BY 
+        join location l on c.location_id = l.id
+        join combat_combat_rounds ccr on c.id = ccr.combat_id
+        join round r on ccr.combat_rounds_id = r.id
+        join round_logs rl on r.id = rl.round_id
+        join combat_log cl on rl.logs_id = cl.id
+        left join spell s on cl.action_id = s.id
+group by
     c.id, l.name
-ORDER BY 
-    total_damage_dealt DESC;
+order by
+    total_damage_dealt desc;
 
 -- View: Spell Statistics
 -- Spell usage and damage statistics.
-CREATE VIEW v_spell_statistics AS
-SELECT 
-    s.id AS spell_id,
-    s.name AS spell_name,
+create view v_spell_statistics as
+select
+    s.id as spell_id,
+    s.name as spell_name,
     s.spell_category,
     s.spell_element,
     s.spell_impact_type,
-    COUNT(cl.id) AS times_used,
-    COUNT(DISTINCT cl.actor_id) AS unique_users,
-    SUM(cl.impact) AS total_impact,
-    ROUND(AVG(cl.impact), 2) AS avg_impact,
-    MAX(cl.impact) AS max_impact,
-    MIN(cl.impact) FILTER (WHERE cl.impact > 0) AS min_impact,
-    ROUND(SUM(cl.impact)::numeric / NULLIF(SUM(cl.action_points_spent), 0), 2) AS impact_per_ap_spent,
-    ROUND(COUNT(CASE WHEN cl.impact > 0 THEN 1 END)::numeric / NULLIF(COUNT(cl.id), 0) * 100, 2) AS success_rate
-FROM 
+    count(cl.id) as times_used,
+    count(distinct cl.actor_id) as unique_users,
+    sum(cl.impact) as total_impact,
+    round(avg(cl.impact), 2) as avg_impact,
+    max(cl.impact) as max_impact,
+    min(cl.impact) filter (where cl.impact > 0) as min_impact,
+    round(sum(cl.impact)::numeric / nullif(sum(cl.action_points_spent), 0), 2) as impact_per_ap_spent,
+    round(count(case when cl.impact > 0 then 1 end)::numeric / nullif(count(cl.id), 0) * 100, 2) as success_rate
+from
     spell s
-    LEFT JOIN combat_log cl ON s.id = cl.action_id
-GROUP BY 
+        left join combat_log cl on s.id = cl.action_id
+group by
     s.id, s.name, s.spell_category, s.spell_element, s.spell_impact_type
-ORDER BY 
-    times_used DESC, total_impact DESC;
+order by
+    times_used desc, total_impact desc;

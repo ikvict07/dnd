@@ -1,56 +1,56 @@
 -- DnD Combat System Database Schema - Miscellaneous Views
 
 -- View: Spell Usage Statistics
-CREATE VIEW spell_usage_statistics AS
-SELECT 
-    s.id AS spell_id,
-    s.name AS spell_name,
+create view spell_usage_statistics as
+select
+    s.id as spell_id,
+    s.name as spell_name,
     s.spell_category,
     s.spell_element,
     s.spell_impact_type,
-    COUNT(*) AS times_used,
-    SUM(cl.impact) AS total_impact,
-    AVG(cl.impact) AS avg_impact,
-    COUNT(DISTINCT cl.actor_id) AS unique_users
-FROM 
+    count(*) as times_used,
+    sum(cl.impact) as total_impact,
+    avg(cl.impact) as avg_impact,
+    count(distinct cl.actor_id) as unique_users
+from
     spell s
-    JOIN combat_log cl ON s.id = cl.action_id
-GROUP BY 
+        join combat_log cl on s.id = cl.action_id
+group by
     s.id, s.name, s.spell_category, s.spell_element, s.spell_impact_type;
 
 -- View: Location Item Summary
-CREATE VIEW location_item_summary AS
-SELECT 
-    l.id AS location_id,
-    l.name AS location_name,
-    COUNT(it.id) AS items_on_floor,
-    SUM(CASE WHEN it.type = 0 THEN 1 ELSE 0 END) AS armor_count,
-    SUM(CASE WHEN it.type = 1 THEN 1 ELSE 0 END) AS weapon_count,
-    SUM(CASE WHEN it.type = 2 THEN 1 ELSE 0 END) AS potion_count,
-    SUM(CASE WHEN it.type = 3 THEN 1 ELSE 0 END) AS trophy_count,
-    SUM(it.weight) AS total_weight
-FROM 
+create view location_item_summary as
+select
+    l.id as location_id,
+    l.name as location_name,
+    count(it.id) as items_on_floor,
+    sum(case when it.type = 0 then 1 else 0 end) as armor_count,
+    sum(case when it.type = 1 then 1 else 0 end) as weapon_count,
+    sum(case when it.type = 2 then 1 else 0 end) as potion_count,
+    sum(case when it.type = 3 then 1 else 0 end) as trophy_count,
+    sum(it.weight) as total_weight
+from
     location l
-    LEFT JOIN location_items_on_the_floor lif ON l.id = lif.location_id
-    LEFT JOIN item it ON lif.items_on_the_floor_id = it.id
-GROUP BY 
+        left join location_items_on_the_floor lif on l.id = lif.location_id
+        left join item it on lif.items_on_the_floor_id = it.id
+group by
     l.id, l.name;
 
 -- View: Effect Analysis
-CREATE VIEW effect_analysis AS
-SELECT 
-    et.id AS effect_template_id,
+create view effect_analysis as
+select
+    et.id as effect_template_id,
     et.effect_name,
-    et.effect AS effect_type,
+    et.effect as effect_type,
     et.affected_attribute_type,
-    et.value AS modifier_value,
+    et.value as modifier_value,
     et.duration_rounds,
-    COUNT(e.id) AS active_instances,
-    COUNT(DISTINCT cue.character_id) AS affected_characters,
-    AVG(e.rounds_left) AS avg_remaining_rounds
-FROM 
+    count(e.id) as active_instances,
+    count(distinct cue.character_id) as affected_characters,
+    avg(e.rounds_left) as avg_remaining_rounds
+from
     effect_template et
-    LEFT JOIN effect e ON et.id = e.effect_template_id
-    LEFT JOIN character_under_effects cue ON e.id = cue.under_effects_id
-GROUP BY 
+        left join effect e on et.id = e.effect_template_id
+        left join character_under_effects cue on e.id = cue.under_effects_id
+group by
     et.id, et.effect_name, et.effect, et.affected_attribute_type, et.value, et.duration_rounds;

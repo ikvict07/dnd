@@ -1,5 +1,3 @@
--- DnD Combat System Database Schema - Main File
-
 -- This file includes all the SQL files in the correct order to set up the database schema
 
 -- Schema
@@ -18,6 +16,8 @@
 \i sql/procedures/03_loot_procedure.sql
 \i sql/procedures/04_combat_procedures.sql
 \i sql/procedures/05_effect_procedures.sql
+\i sql/procedures/06_item_use_procedure.sql
+\i sql/procedures/07_player_death_procedure.sql
 
 -- Views
 \i sql/views/01_character_views.sql
