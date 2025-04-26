@@ -1,0 +1,11 @@
+spring:
+  application.name: '@projectName@'
+  datasource:
+    driverClassName: org.postgresql.Driver
+    password: 1111
+    url: jdbc:postgresql://localhost:5432/dnd
+    username: postgres
+  jpa.hibernate.ddl-auto: none
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true

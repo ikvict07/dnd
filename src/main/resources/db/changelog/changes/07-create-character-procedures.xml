@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Character Procedures -->
+    <changeSet id="07-01" author="liquibase">
+        <comment>Create process_character_death procedure</comment>
+        <sql splitStatements="false"><![CDATA[
+create procedure process_character_death(IN p_character_id integer)
+    language plpgsql
+as
+$$
+DECLARE
+    v_location_id INTEGER;
+    v_inventory_id INTEGER;
+    v_item_record RECORD;
+BEGIN
+    -- Get character's location and inventory
+    SELECT location_id, inventory_id INTO v_location_id, v_inventory_id
+    FROM character
+    WHERE id = p_character_id;
+
+    -- Drop all items from inventory to location
+    FOR v_item_record IN (
+        SELECT id FROM item WHERE inventory_id = v_inventory_id
+    ) LOOP
+        UPDATE item
+        SET inventory_id = NULL, location_id = v_location_id
+        WHERE id = v_item_record.id;
+    END LOOP;
+
+    -- Reset inventory size
+    UPDATE inventory
+    SET current_size = 0
+    WHERE id = v_inventory_id;
+
+    -- Remove all effects from character
+    DELETE FROM effect
+    WHERE character_id = p_character_id;
+
+    -- Reset character HP to 0 (just to be sure)
+    UPDATE character
+    SET hp = 0
+    WHERE id = p_character_id;
+END;
+$$;
+
+alter procedure process_character_death(integer) owner to postgres;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="07-02" author="liquibase">
+        <comment>Create apply_effect_to_character procedure</comment>
+        <sql splitStatements="false"><![CDATA[
+create procedure apply_effect_to_character(IN p_effect_id integer, IN p_character_id integer)
+    language plpgsql
+as
+$$
+DECLARE
+    v_effect_template_id INTEGER;
+    v_affected_attribute attribute_type;
+    v_modifier_value INTEGER;
+    v_attribute_id INTEGER;
+BEGIN
+    -- Get effect details
+    SELECT e.effect_template_id, et.affected_attribute_type, et.value
+    INTO v_effect_template_id, v_affected_attribute, v_modifier_value
+    FROM effect e
+    JOIN effect_template et ON e.effect_template_id = et.id
+    WHERE e.id = p_effect_id;
+
+    -- Find attribute record
+    SELECT id INTO v_attribute_id
+    FROM attribute
+    WHERE character_id = p_character_id AND attribute_type = v_affected_attribute;
+
+    -- Update attribute value
+    IF v_attribute_id IS NOT NULL THEN
+        UPDATE attribute
+        SET value = value + v_modifier_value
+        WHERE id = v_attribute_id;
+    ELSE
+        -- Create attribute if it doesn't exist
+        INSERT INTO attribute (character_id, attribute_type, value)
+        VALUES (p_character_id, v_affected_attribute, v_modifier_value);
+    END IF;
+END;
+$$;
+
+alter procedure apply_effect_to_character(integer, integer) owner to postgres;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="07-03" author="liquibase">
+        <comment>Create remove_expired_effects procedure</comment>
+        <sql splitStatements="false"><![CDATA[
+create procedure remove_expired_effects()
+    language plpgsql
+as
+$$
+DECLARE
+    v_effect_record RECORD;
+BEGIN
+    -- Find all expired effects
+    FOR v_effect_record IN (
+        SELECT e.id, e.character_id, et.affected_attribute_type, et.value
+        FROM effect e
+        JOIN effect_template et ON e.effect_template_id = et.id
+        WHERE e.rounds_left <= 0
+    ) LOOP
+        -- Revert attribute modification
+        UPDATE attribute
+        SET value = value - v_effect_record.value
+        WHERE character_id = v_effect_record.character_id 
+          AND attribute_type = v_effect_record.affected_attribute_type;
+
+        -- Delete effect record
+        DELETE FROM effect
+        WHERE id = v_effect_record.id;
+    END LOOP;
+END;
+$$;
+
+alter procedure remove_expired_effects() owner to postgres;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="07-04" author="liquibase">
+        <comment>Create loot_item procedure</comment>
+        <sql splitStatements="false"><![CDATA[
+create procedure loot_item(IN p_character_id integer, IN p_item_id integer)
+    language plpgsql
+as
+$$
+DECLARE
+    v_character_location_id INTEGER;
+    v_item_location_id INTEGER;
+    v_inventory_id INTEGER;
+    v_constitution_value INTEGER;
+    v_class_id INTEGER;
+    v_base_inventory_size INTEGER;
+    v_max_capacity INTEGER;
+    v_current_size DOUBLE PRECISION;
+    v_item_weight DOUBLE PRECISION;
+BEGIN
+    -- Get character's location and inventory
+    SELECT location_id, inventory_id, character_class_id 
+    INTO v_character_location_id, v_inventory_id, v_class_id
+    FROM character
+    WHERE id = p_character_id;
+
+    -- Get item's location and weight
+    SELECT location_id, weight INTO v_item_location_id, v_item_weight
+    FROM item
+    WHERE id = p_item_id;
+
+    -- Check if item is in the same location as character
+    IF v_item_location_id != v_character_location_id THEN
+        RAISE EXCEPTION 'Item is not in the same location as character';
+    END IF;
+
+    -- Get character's constitution
+    v_constitution_value := get_attribute_value(p_character_id, 'CONSTITUTION');
+
+    -- Get base inventory size from class
+    SELECT COALESCE(inventory_multiplier, 1) * 10 INTO v_base_inventory_size
+    FROM class
+    WHERE id = v_class_id;
+
+    -- Calculate max inventory capacity
+    v_max_capacity := v_base_inventory_size * (1 + (v_constitution_value / 100.0));
+
+    -- Get current inventory size
+    SELECT current_size INTO v_current_size
+    FROM inventory
+    WHERE id = v_inventory_id;
+
+    -- Check if item fits in inventory
+    IF v_current_size + v_item_weight > v_max_capacity THEN
+        RAISE EXCEPTION 'Not enough inventory space';
+    END IF;
+
+    -- Update item location
+    UPDATE item
+    SET location_id = NULL, inventory_id = v_inventory_id
+    WHERE id = p_item_id;
+
+    -- Update inventory size
+    UPDATE inventory
+    SET current_size = current_size + v_item_weight
+    WHERE id = v_inventory_id;
+END;
+$$;
+
+alter procedure loot_item(integer, integer) owner to postgres;
+        ]]></sql>
+    </changeSet>
+
+</databaseChangeLog>

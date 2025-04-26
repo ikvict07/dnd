@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Spell Procedures -->
+    <changeSet id="06-01" author="liquibase">
+        <comment>Create cast_spell procedure</comment>
+        <sql splitStatements="false"><![CDATA[
+create procedure cast_spell(IN p_actor_id integer, IN p_spell_id integer, IN p_target_id integer, IN p_combat_round_id integer)
+    language plpgsql
+as
+$$
+DECLARE
+    v_spell_record RECORD;
+    v_actor_location_id INTEGER;
+    v_target_location_id INTEGER;
+    v_location_is_pvp BOOLEAN;
+    v_required_ap INTEGER;
+    v_actor_ap INTEGER;
+    v_hit_chance DOUBLE PRECISION;
+    v_random_value DOUBLE PRECISION;
+    v_impact INTEGER := 0;
+    v_hit_successful BOOLEAN := FALSE;
+    v_target_hp DOUBLE PRECISION;
+    v_effect_id INTEGER;
+    v_combat_log_id INTEGER;
+BEGIN
+    -- Get spell details
+    SELECT * INTO v_spell_record FROM spell WHERE id = p_spell_id;
+
+    -- Get actor and target location
+    SELECT location_id, action_points INTO v_actor_location_id, v_actor_ap
+    FROM character
+    WHERE id = p_actor_id;
+
+    SELECT location_id INTO v_target_location_id
+    FROM character
+    WHERE id = p_target_id;
+
+    -- Check if actor and target are in the same location
+    IF v_actor_location_id != v_target_location_id THEN
+        RAISE EXCEPTION 'Actor and target must be in the same location';
+    END IF;
+
+    -- Get location PvP status
+    SELECT is_pvp INTO v_location_is_pvp
+    FROM location
+    WHERE id = v_actor_location_id;
+
+    -- PvP check
+    IF v_spell_record.is_pvp AND NOT v_location_is_pvp THEN
+        RAISE EXCEPTION 'Cannot use PvP spell in non-PvP location';
+    END IF;
+
+    -- Calculate required AP
+    v_required_ap := calculate_required_ap(p_spell_id, p_actor_id);
+
+    -- AP check
+    IF v_actor_ap < v_required_ap THEN
+        RAISE EXCEPTION 'Not enough action points';
+    END IF;
+
+    -- Deduct AP
+    UPDATE character
+    SET action_points = action_points - v_required_ap
+    WHERE id = p_actor_id;
+
+    -- Calculate hit chance
+    v_hit_chance := calculate_hit_chance(p_actor_id, p_target_id);
+
+    -- Generate random number
+    v_random_value := random();
+
+    -- Check if hit is successful
+    IF v_random_value <= v_hit_chance THEN
+        v_hit_successful := TRUE;
+
+        -- Calculate impact
+        v_impact := calculate_spell_impact(p_spell_id, p_actor_id, p_target_id);
+
+        -- Apply impact based on spell type
+        IF v_spell_record.spell_impact_type = 'HEALING' THEN
+            UPDATE character
+            SET hp = LEAST(100, hp + v_impact)
+            WHERE id = p_target_id;
+        ELSIF v_spell_record.spell_impact_type = 'DAMAGE' THEN
+            -- Get target's current HP
+            SELECT hp INTO v_target_hp
+            FROM character
+            WHERE id = p_target_id;
+
+            -- Apply damage
+            UPDATE character
+            SET hp = GREATEST(0, hp - v_impact)
+            WHERE id = p_target_id;
+
+            -- Check if target died
+            IF v_target_hp - v_impact <= 0 THEN
+                -- Process character death
+                CALL process_character_death(p_target_id);
+            END IF;
+        END IF;
+
+        -- Apply effect if applicable
+        IF v_spell_record.cause_effect_id IS NOT NULL THEN
+            -- Create new effect
+            INSERT INTO effect (effect_template_id, character_id, rounds_left)
+            VALUES (v_spell_record.cause_effect_id, p_target_id, 
+                   (SELECT duration_rounds FROM effect_template WHERE id = v_spell_record.cause_effect_id))
+            RETURNING id INTO v_effect_id;
+
+            -- Apply attribute modification
+            CALL apply_effect_to_character(v_effect_id, p_target_id);
+        END IF;
+    END IF;
+
+    -- Create combat log
+    INSERT INTO combat_log (actor_id, action_id, target_id, caused_effect_id, action_points_spent, impact, round_id)
+    VALUES (p_actor_id, p_spell_id, p_target_id, v_effect_id, v_required_ap, v_impact, p_combat_round_id)
+    RETURNING id INTO v_combat_log_id;
+END;
+$$;
+
+alter procedure cast_spell(integer, integer, integer, integer) owner to postgres;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="06-02" author="liquibase">
+        <comment>Create character_rest procedure</comment>
+        <sql splitStatements="false"><![CDATA[
+create procedure character_rest(IN p_character_id integer)
+    language plpgsql
+as
+$$
+DECLARE
+    v_location_id INTEGER;
+    v_active_combat BOOLEAN;
+    v_health_value INTEGER;
+    v_healing_amount DOUBLE PRECISION;
+    v_rest_spell_id INTEGER;
+BEGIN
+    -- Get character's location
+    SELECT location_id INTO v_location_id
+    FROM character
+    WHERE id = p_character_id;
+
+    -- Check if there's active combat in the location
+    SELECT EXISTS (
+        SELECT 1 
+        FROM combat_round 
+        WHERE location_id = v_location_id AND is_active = TRUE
+    ) INTO v_active_combat;
+
+    -- Cannot rest during combat
+    IF v_active_combat THEN
+        RAISE EXCEPTION 'Cannot rest during active combat';
+    END IF;
+
+    -- Get character's health attribute
+    v_health_value := get_attribute_value(p_character_id, 'HEALTH');
+
+    -- Find a rest spell (non-PvP healing spell)
+    SELECT id INTO v_rest_spell_id
+    FROM spell
+    WHERE spell_impact_type = 'HEALING' AND is_pvp = FALSE
+    LIMIT 1;
+
+    -- If no rest spell found, create a basic one
+    IF v_rest_spell_id IS NULL THEN
+        INSERT INTO spell (name, base_cost, is_pvp, spell_category, spell_element, 
+                          scales_from, spell_impact_type, range, value)
+        VALUES ('Rest', 0, FALSE, 'MAGIC', 'HOLY', 'HEALTH', 'HEALING', 0, 20)
+        RETURNING id INTO v_rest_spell_id;
+    END IF;
+
+    -- Calculate healing amount based on health attribute
+    SELECT value * (1 + (v_health_value / 75.0)) INTO v_healing_amount
+    FROM spell
+    WHERE id = v_rest_spell_id;
+
+    -- Apply healing
+    UPDATE character
+    SET hp = LEAST(100, hp + v_healing_amount)
+    WHERE id = p_character_id;
+
+    -- Log recovery (create a combat log entry)
+    INSERT INTO combat_round (round_number, location_id, is_active)
+    VALUES (0, v_location_id, FALSE);
+
+    INSERT INTO combat_log (actor_id, action_id, target_id, action_points_spent, impact, round_id)
+    VALUES (p_character_id, v_rest_spell_id, p_character_id, 0, ROUND(v_healing_amount),
+           (SELECT id FROM combat_round WHERE location_id = v_location_id ORDER BY id DESC LIMIT 1));
+END;
+$$;
+
+alter procedure character_rest(integer) owner to postgres;
+        ]]></sql>
+    </changeSet>
+
+</databaseChangeLog>

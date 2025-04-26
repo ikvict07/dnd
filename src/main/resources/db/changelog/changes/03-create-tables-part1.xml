@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Item table -->
+    <changeSet id="03-01" author="liquibase">
+        <createTable tableName="item">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)"/>
+            <column name="type" type="smallint"/>
+            <column name="weight" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>alter table item owner to postgres;</sql>
+    </changeSet>
+
+    <!-- Inventory table -->
+    <changeSet id="03-02" author="liquibase">
+        <createTable tableName="inventory">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="capacity" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>alter table inventory owner to postgres;</sql>
+    </changeSet>
+
+    <!-- Location table -->
+    <changeSet id="03-03" author="liquibase">
+        <createTable tableName="location">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)"/>
+            <column name="is_pvp" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>alter table location owner to postgres;</sql>
+    </changeSet>
+
+    <!-- Class table -->
+    <changeSet id="03-04" author="liquibase">
+        <createTable tableName="class">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)"/>
+            <column name="main_attribute" type="varchar(255)"/>
+            <column name="armor_class" type="varchar(255)"/>
+            <column name="inventory_multiplier" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action_points_multiplier" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>alter table class owner to postgres;</sql>
+    </changeSet>
+
+    <!-- Effect Template table -->
+    <changeSet id="03-05" author="liquibase">
+        <createTable tableName="effect_template">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="effect_name" type="varchar(255)"/>
+            <column name="effect" type="varchar(255)"/>
+            <column name="affected_attribute_type" type="varchar(255)"/>
+            <column name="value" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="duration_rounds" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>alter table effect_template owner to postgres;</sql>
+    </changeSet>
+
+    <!-- Attribute table -->
+    <changeSet id="03-06" author="liquibase">
+        <createTable tableName="attribute">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="attribute_type" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>alter table attribute owner to postgres;</sql>
+    </changeSet>
+
+    <!-- Round table -->
+    <changeSet id="03-07" author="liquibase">
+        <createTable tableName="round">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="index" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_finished" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>alter table round owner to postgres;</sql>
+    </changeSet>
+
+    <!-- Armor Set table -->
+    <changeSet id="03-08" author="liquibase">
+        <createTable tableName="armor_set">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)"/>
+            <column name="damage_reduction" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="swiftness" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="armor_class" type="varchar(255)"/>
+            <column name="protects_from" type="varchar(255)"/>
+            <column name="item_id" type="bigint">
+                <constraints foreignKeyName="fk_armor_set_item" references="item(id)"/>
+            </column>
+        </createTable>
+        <sql>alter table armor_set owner to postgres;</sql>
+        <createIndex indexName="armor_set_item_id_key" tableName="armor_set" unique="true">
+            <column name="item_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Weapon table -->
+    <changeSet id="03-09" author="liquibase">
+        <createTable tableName="weapon">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)"/>
+            <column name="damage_multiplier" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action_points_multiplier" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scales_from" type="varchar(255)"/>
+            <column name="item_id" type="bigint">
+                <constraints foreignKeyName="fk_weapon_item" references="item(id)"/>
+            </column>
+        </createTable>
+        <sql>alter table weapon owner to postgres;</sql>
+        <createIndex indexName="weapon_item_id_key" tableName="weapon" unique="true">
+            <column name="item_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Inventory Items table -->
+    <changeSet id="03-10" author="liquibase">
+        <createTable tableName="inventory_items">
+            <column name="inventory_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_inventory_items_inventory" references="inventory(id)"/>
+            </column>
+            <column name="items_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_inventory_items_item" references="item(id)"/>
+            </column>
+        </createTable>
+        <sql>alter table inventory_items owner to postgres;</sql>
+        <createIndex indexName="inventory_items_items_id_key" tableName="inventory_items" unique="true">
+            <column name="items_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Location Items On The Floor table -->
+    <changeSet id="03-11" author="liquibase">
+        <createTable tableName="location_items_on_the_floor">
+            <column name="items_on_the_floor_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_location_items_item" references="item(id)"/>
+            </column>
+            <column name="location_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_location_items_location" references="location(id)"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="location_items_on_the_floor" columnNames="items_on_the_floor_id, location_id"/>
+        <sql>alter table location_items_on_the_floor owner to postgres;</sql>
+    </changeSet>
+
+    <!-- Spell table -->
+    <changeSet id="03-12" author="liquibase">
+        <createTable tableName="spell">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)"/>
+            <column name="base_cost" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_pvp" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="spell_category" type="varchar(255)"/>
+            <column name="spell_element" type="varchar(255)"/>
+            <column name="scales_from" type="varchar(255)"/>
+            <column name="spell_impact_type" type="smallint"/>
+            <column name="range" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cause_effect_id" type="bigint">
+                <constraints foreignKeyName="fk_spell_effect_template" references="effect_template(id)"/>
+            </column>
+        </createTable>
+        <sql>alter table spell owner to postgres;</sql>
+    </changeSet>
+
+</databaseChangeLog>

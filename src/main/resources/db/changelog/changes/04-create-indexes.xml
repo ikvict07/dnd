@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="04-01" author="liquibase">
+        <comment>Create additional indexes for optimizing combat and damage calculations</comment>
+        
+        <!-- Index for character attributes lookup (used in damage calculations) -->
+        <createIndex indexName="idx_character_attributes_character_id" tableName="character_attributes">
+            <column name="character_id"/>
+        </createIndex>
+        
+        <!-- Index for character location (used in combat eligibility checks) -->
+        <createIndex indexName="idx_character_location_id" tableName="character">
+            <column name="location_id"/>
+        </createIndex>
+        
+        <!-- Index for active effects on characters (used in combat calculations) -->
+        <createIndex indexName="idx_character_under_effects_character_id" tableName="character_under_effects">
+            <column name="character_id"/>
+        </createIndex>
+        
+        <!-- Index for spell scaling attributes (used in damage calculations) -->
+        <createIndex indexName="idx_spell_scales_from" tableName="spell">
+            <column name="scales_from"/>
+        </createIndex>
+        
+        <!-- Index for combat logs by round (used in combat history queries) -->
+        <createIndex indexName="idx_round_logs_round_id" tableName="round_logs">
+            <column name="round_id"/>
+        </createIndex>
+        
+        <!-- Index for combat logs by actor (used in player performance analysis) -->
+        <createIndex indexName="idx_combat_log_actor_id" tableName="combat_log">
+            <column name="actor_id"/>
+        </createIndex>
+        
+        <!-- Index for combat logs by target (used in damage received analysis) -->
+        <createIndex indexName="idx_combat_log_target_id" tableName="combat_log">
+            <column name="target_id"/>
+        </createIndex>
+        
+        <!-- Index for items in inventory (used in item usage checks) -->
+        <createIndex indexName="idx_inventory_items_inventory_id" tableName="inventory_items">
+            <column name="inventory_id"/>
+        </createIndex>
+        
+        <!-- Index for items on the floor in a location (used in item looting) -->
+        <createIndex indexName="idx_location_items_location_id" tableName="location_items_on_the_floor">
+            <column name="location_id"/>
+        </createIndex>
+        
+        <!-- Index for rounds in a combat (used in combat flow) -->
+        <createIndex indexName="idx_combat_combat_rounds_combat_id" tableName="combat_combat_rounds">
+            <column name="combat_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

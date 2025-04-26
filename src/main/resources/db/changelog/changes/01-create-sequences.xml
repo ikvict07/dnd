@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="01" author="liquibase">
+        <comment>Create sequences for DnD Combat System</comment>
+        
+        <!-- armor_set_seq -->
+        <createSequence sequenceName="armor_set_seq" incrementBy="50"/>
+        <sql>alter sequence armor_set_seq owner to postgres;</sql>
+        
+        <!-- attribute_seq -->
+        <createSequence sequenceName="attribute_seq" incrementBy="50"/>
+        <sql>alter sequence attribute_seq owner to postgres;</sql>
+        
+        <!-- character_seq -->
+        <createSequence sequenceName="character_seq" incrementBy="50"/>
+        <sql>alter sequence character_seq owner to postgres;</sql>
+        
+        <!-- class_seq -->
+        <createSequence sequenceName="class_seq" incrementBy="50"/>
+        <sql>alter sequence class_seq owner to postgres;</sql>
+        
+        <!-- combat_seq -->
+        <createSequence sequenceName="combat_seq" incrementBy="50"/>
+        <sql>alter sequence combat_seq owner to postgres;</sql>
+        
+        <!-- effect_seq -->
+        <createSequence sequenceName="effect_seq" incrementBy="50"/>
+        <sql>alter sequence effect_seq owner to postgres;</sql>
+        
+        <!-- effect_template_seq -->
+        <createSequence sequenceName="effect_template_seq" incrementBy="50"/>
+        <sql>alter sequence effect_template_seq owner to postgres;</sql>
+        
+        <!-- inventory_seq -->
+        <createSequence sequenceName="inventory_seq" incrementBy="50"/>
+        <sql>alter sequence inventory_seq owner to postgres;</sql>
+        
+        <!-- item_seq -->
+        <createSequence sequenceName="item_seq" incrementBy="50"/>
+        <sql>alter sequence item_seq owner to postgres;</sql>
+        
+        <!-- location_seq -->
+        <createSequence sequenceName="location_seq" incrementBy="50"/>
+        <sql>alter sequence location_seq owner to postgres;</sql>
+        
+        <!-- spell_seq -->
+        <createSequence sequenceName="spell_seq" incrementBy="50"/>
+        <sql>alter sequence spell_seq owner to postgres;</sql>
+        
+        <!-- weapon_seq -->
+        <createSequence sequenceName="weapon_seq" incrementBy="50"/>
+        <sql>alter sequence weapon_seq owner to postgres;</sql>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Character Views -->
+    <changeSet id="09-01" author="liquibase">
+        <comment>Create character views</comment>
+        
+        <!-- Character Stats Summary View -->
+        <createView viewName="character_stats_summary">
+            SELECT 
+                c.id AS character_id,
+                c.name AS character_name,
+                c.hp,
+                c.lvl,
+                c.xp,
+                cl.name AS class_name,
+                cl.main_attribute,
+                l.name AS location_name,
+                l.is_pvp AS in_pvp_zone,
+                (SELECT COUNT(*) FROM character_spells WHERE character_id = c.id) AS spell_count,
+                (SELECT COUNT(*) FROM character_under_effects WHERE character_id = c.id) AS active_effects_count,
+                w.name AS weapon_name,
+                a.name AS armor_name,
+                a.protects_from AS armor_resistance
+            FROM 
+                character c
+                LEFT JOIN class cl ON c.character_class_id = cl.id
+                LEFT JOIN location l ON c.location_id = l.id
+                LEFT JOIN weapon w ON c.weapon_id = w.id
+                LEFT JOIN armor_set a ON c.armor_set_id = a.id
+        </createView>
+        
+        <!-- Character Attributes View -->
+        <createView viewName="character_attributes_view">
+            SELECT 
+                c.id AS character_id,
+                c.name AS character_name,
+                a.attribute_type,
+                a.value
+            FROM 
+                character c
+                JOIN character_attributes ca ON c.id = ca.character_id
+                JOIN attribute a ON ca.attributes_id = a.id
+        </createView>
+        
+        <!-- Character Inventory Summary View -->
+        <createView viewName="character_inventory_summary">
+            SELECT 
+                c.id AS character_id,
+                c.name AS character_name,
+                i.capacity AS max_capacity,
+                i.current_size AS current_used,
+                (i.capacity - i.current_size) AS available_space,
+                COUNT(it.id) AS item_count,
+                SUM(CASE WHEN it.type = 0 THEN 1 ELSE 0 END) AS armor_count,
+                SUM(CASE WHEN it.type = 1 THEN 1 ELSE 0 END) AS weapon_count,
+                SUM(CASE WHEN it.type = 2 THEN 1 ELSE 0 END) AS potion_count,
+                SUM(CASE WHEN it.type = 3 THEN 1 ELSE 0 END) AS trophy_count
+            FROM 
+                character c
+                JOIN inventory i ON c.inventory_id = i.id
+                LEFT JOIN inventory_items ii ON i.id = ii.inventory_id
+                LEFT JOIN item it ON ii.items_id = it.id
+            GROUP BY 
+                c.id, c.name, i.capacity, i.current_size
+        </createView>
+    </changeSet>
+
+    <!-- Combat Views -->
+    <changeSet id="09-02" author="liquibase">
+        <comment>Create combat views</comment>
+        
+        <!-- Combat Activity Summary View -->
+        <createView viewName="combat_activity_summary">
+            SELECT 
+                cl.actor_id,
+                c.name AS actor_name,
+                COUNT(*) AS total_actions,
+                SUM(cl.action_points_spent) AS total_ap_spent,
+                SUM(cl.impact) AS total_impact,
+                COUNT(CASE WHEN cl.impact > 0 THEN 1 END) AS successful_hits,
+                ROUND(COUNT(CASE WHEN cl.impact > 0 THEN 1 END)::numeric / COUNT(*)::numeric * 100, 2) AS hit_percentage,
+                AVG(cl.impact) FILTER (WHERE cl.impact > 0) AS avg_impact_per_hit,
+                MAX(cl.impact) AS max_impact
+            FROM 
+                combat_log cl
+                JOIN character c ON cl.actor_id = c.id
+            GROUP BY 
+                cl.actor_id, c.name
+        </createView>
+        
+        <!-- Damage Received Summary View -->
+        <createView viewName="damage_received_summary">
+            SELECT 
+                cl.target_id,
+                c.name AS target_name,
+                COUNT(*) AS times_targeted,
+                SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS total_damage_received,
+                SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'HEALING') AS total_healing_received,
+                AVG(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS avg_damage_per_hit,
+                MAX(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS max_damage_received
+            FROM 
+                combat_log cl
+                JOIN character c ON cl.target_id = c.id
+                LEFT JOIN spell s ON cl.action_id = s.id
+            GROUP BY 
+                cl.target_id, c.name
+        </createView>
+        
+        <!-- Current Combat State View -->
+        <createView viewName="current_combat_state">
+            SELECT 
+                l.id AS location_id,
+                l.name AS location_name,
+                r.id AS round_id,
+                r.round_number,
+                COUNT(DISTINCT rp.participants_id) AS active_participants,
+                COUNT(DISTINCT cl.id) AS actions_this_round
+            FROM 
+                location l
+                JOIN combat_round r ON l.id = r.location_id AND r.is_active = TRUE
+                LEFT JOIN round_participants rp ON r.id = rp.round_id
+                LEFT JOIN round_logs rl ON r.id = rl.round_id
+                LEFT JOIN combat_log cl ON rl.logs_id = cl.id
+            GROUP BY 
+                l.id, l.name, r.id, r.round_number
+        </createView>
+        
+        <!-- Combat Round Summary View -->
+        <createView viewName="combat_round_summary">
+            SELECT 
+                r.id AS round_id,
+                r.round_number,
+                l.id AS location_id,
+                l.name AS location_name,
+                COUNT(DISTINCT cl.actor_id) AS active_characters,
+                COUNT(cl.id) AS total_actions,
+                SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'DAMAGE') AS total_damage_dealt,
+                SUM(cl.impact) FILTER (WHERE s.spell_impact_type = 'HEALING') AS total_healing_done,
+                SUM(cl.action_points_spent) AS total_ap_spent
+            FROM 
+                round r
+                JOIN location l ON r.location_id = l.id
+                LEFT JOIN round_logs rl ON r.id = rl.round_id
+                LEFT JOIN combat_log cl ON rl.logs_id = cl.id
+                LEFT JOIN spell s ON cl.action_id = s.id
+            GROUP BY 
+                r.id, r.round_number, l.id, l.name
+        </createView>
+    </changeSet>
+
+    <!-- Miscellaneous Views -->
+    <changeSet id="09-03" author="liquibase">
+        <comment>Create miscellaneous views</comment>
+        
+        <!-- Spell Usage Statistics View -->
+        <createView viewName="spell_usage_statistics">
+            SELECT 
+                s.id AS spell_id,
+                s.name AS spell_name,
+                s.spell_category,
+                s.spell_element,
+                s.spell_impact_type,
+                COUNT(*) AS times_used,
+                SUM(cl.impact) AS total_impact,
+                AVG(cl.impact) AS avg_impact,
+                COUNT(DISTINCT cl.actor_id) AS unique_users
+            FROM 
+                spell s
+                JOIN combat_log cl ON s.id = cl.action_id
+            GROUP BY 
+                s.id, s.name, s.spell_category, s.spell_element, s.spell_impact_type
+        </createView>
+        
+        <!-- Location Item Summary View -->
+        <createView viewName="location_item_summary">
+            SELECT 
+                l.id AS location_id,
+                l.name AS location_name,
+                COUNT(it.id) AS items_on_floor,
+                SUM(CASE WHEN it.type = 0 THEN 1 ELSE 0 END) AS armor_count,
+                SUM(CASE WHEN it.type = 1 THEN 1 ELSE 0 END) AS weapon_count,
+                SUM(CASE WHEN it.type = 2 THEN 1 ELSE 0 END) AS potion_count,
+                SUM(CASE WHEN it.type = 3 THEN 1 ELSE 0 END) AS trophy_count,
+                SUM(it.weight) AS total_weight
+            FROM 
+                location l
+                LEFT JOIN location_items_on_the_floor lif ON l.id = lif.location_id
+                LEFT JOIN item it ON lif.items_on_the_floor_id = it.id
+            GROUP BY 
+                l.id, l.name
+        </createView>
+        
+        <!-- Effect Analysis View -->
+        <createView viewName="effect_analysis">
+            SELECT 
+                et.id AS effect_template_id,
+                et.effect_name,
+                et.effect AS effect_type,
+                et.affected_attribute_type,
+                et.value AS modifier_value,
+                et.duration_rounds,
+                COUNT(e.id) AS active_instances,
+                COUNT(DISTINCT e.character_id) AS affected_characters,
+                AVG(e.rounds_left) AS avg_remaining_rounds
+            FROM 
+                effect_template et
+                LEFT JOIN effect e ON et.id = e.effect_template_id
+            GROUP BY 
+                et.id, et.effect_name, et.effect, et.affected_attribute_type, et.value, et.duration_rounds
+        </createView>
+    </changeSet>
+
+</databaseChangeLog>
