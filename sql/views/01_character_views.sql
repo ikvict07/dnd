@@ -45,10 +45,10 @@ select
     get_inventory_weight(i.id::integer) as current_used,
     (i.capacity - get_inventory_weight(i.id::integer)) as available_space,
     count(it.id) as item_count,
-    sum(case when it.type = 0 then 1 else 0 end) as armor_count,
-    sum(case when it.type = 1 then 1 else 0 end) as weapon_count,
-    sum(case when it.type = 2 then 1 else 0 end) as potion_count,
-    sum(case when it.type = 3 then 1 else 0 end) as trophy_count
+    sum(case when it.type = 'ARMOR'::item_type then 1 else 0 end) as armor_count,
+    sum(case when it.type = 'WEAPON'::item_type then 1 else 0 end) as weapon_count,
+    sum(case when it.type = 'POTION'::item_type then 1 else 0 end) as potion_count,
+    sum(case when it.type = 'TROPHY'::item_type then 1 else 0 end) as trophy_count
 from
     character c
         join inventory i on c.inventory_id = i.id

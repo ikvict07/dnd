@@ -6,7 +6,7 @@ declare
     v_base_value double precision;
     v_spell_element element;
     v_spell_impact_type spell_impact_type;
-    v_scales_from varchar;
+    v_scales_from attribute_type[];
     v_primary_attribute attribute_type;
     v_primary_attribute_value integer;
     v_weapon_damage double precision := 0;
@@ -20,13 +20,13 @@ begin
     from spell
     where id = p_spell_id;
 
-    v_primary_attribute := (string_to_array(v_scales_from, ','))[1]::attribute_type;
+    v_primary_attribute := v_scales_from[1]::attribute_type;
 
     -- Get primary attribute value
     v_primary_attribute_value := get_attribute_value(p_actor_id, v_primary_attribute);
 
     -- Get weapon damage if applicable
-    if v_spell_impact_type = 'DAMAGE' then
+    if v_spell_impact_type = 'DAMAGE'::spell_impact_type then
         select coalesce(w.damage_multiplier, 0) into v_weapon_damage
         from character c
                  left join weapon w on c.weapon_id = w.id
@@ -137,12 +137,7 @@ $$;
 
 alter function calculate_max_hp(integer) owner to postgres;
 
-create or replace function apply_spell_effect(
-    p_caster_id integer,
-    p_target_id integer,
-    p_spell_id integer,
-    p_hit_roll integer
-) returns integer
+create or replace function apply_spell_effect(p_caster_id integer, p_target_id integer, p_spell_id integer, p_hit_roll integer) returns integer
     language plpgsql
 as
 $$
@@ -187,8 +182,8 @@ begin
         where id = v_effect_template_id;
 
         -- Create a new effect based on the template
-        insert into effect (id, effect_template_id, rounds_left)
-        values (nextval('effect_seq'), v_effect_template_id, v_duration_rounds)
+        insert into effect ( effect_template_id, rounds_left)
+        values (v_effect_template_id, v_duration_rounds)
         returning id into v_effect_id;
 
         -- Apply the effect to the target character
@@ -202,6 +197,12 @@ $$;
 
 alter function apply_spell_effect(integer, integer, integer, integer) owner to postgres;
 
+
+
+alter function apply_spell_effect(integer, integer, integer, integer) owner to postgres;
+
+
+
 create or replace function calculate_and_apply_spell_impact(
     p_caster_id integer,
     p_target_id integer,
@@ -211,7 +212,7 @@ create or replace function calculate_and_apply_spell_impact(
 as
 $$
 declare
-    v_spell_scales_from varchar;
+    v_spell_scales_from attribute_type[];
     v_primary_attribute attribute_type;
     v_hit_roll integer;
     v_spell_impact integer;
@@ -222,7 +223,7 @@ begin
     where id = p_spell_id;
 
     -- Get the primary attribute for the spell
-    v_primary_attribute := (string_to_array(v_spell_scales_from, ','))[1]::attribute_type;
+    v_primary_attribute := v_spell_scales_from[1]::attribute_type;
 
     -- Calculate the hit roll based on the primary attribute
     v_hit_roll := calculate_hit_roll(p_caster_id, v_primary_attribute);
@@ -244,7 +245,7 @@ as
 $$
 declare
     v_base_cost integer;
-    v_scales_from varchar;
+    v_scales_from attribute_type[];
     v_attribute_types text[];
     v_attribute_value integer;
     v_attribute_factor double precision := 0;
@@ -254,10 +255,11 @@ begin
     from spell
     where id = p_spell_id;
 
-    v_attribute_types := string_to_array(v_scales_from, ',');
+    raise notice 'v_scales_from: %', v_scales_from::text;
+    v_attribute_types := v_scales_from;
 
     for i in 1..array_length(v_attribute_types, 1) loop
-            v_attribute_value := get_attribute_value(p_character_id, v_attribute_types[i]::attribute_type);
+            v_attribute_value := get_attribute_value(p_character_id, trim(v_attribute_types[i])::attribute_type);
             v_attribute_factor := v_attribute_factor + (v_attribute_value / (100 * array_length(v_attribute_types, 1)));
         end loop;
 

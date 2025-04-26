@@ -6,7 +6,7 @@ $$
 declare
     v_inventory_id       integer;
     v_item_name          varchar(255);
-    v_item_type          integer;
+    v_item_type          item_type;
     v_potion_id          integer;
     v_effect_template_id integer;
     v_effect_id          integer;
@@ -39,7 +39,7 @@ begin
     where i.id = p_item_id;
 
     -- If the item is a potion (type 2), apply its effect
-    if v_item_type = 2 then
+    if v_item_type = 'POTION'::item_type then
         -- Get the potion and its effect template
         select p.id, p.cause_effect_id
         into v_potion_id, v_effect_template_id
@@ -83,14 +83,12 @@ begin
         limit 1;
 
         -- Create a log entry
-        insert into combat_log (id,
-                                action_points_spent,
+        insert into combat_log (action_points_spent,
                                 impact,
                                 description,
                                 actor_id,
                                 target_id)
-        values (nextval('combat_seq'),
-                0, -- No AP spent for using an item
+        values (0, -- No AP spent for using an item
                 0, -- No direct impact value for using an item
                 'Character used item: ' || v_item_name,
                 p_character_id,

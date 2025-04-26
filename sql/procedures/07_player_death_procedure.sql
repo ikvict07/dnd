@@ -34,20 +34,6 @@ begin
 
     -- Delete character's records in the correct order to avoid foreign key constraint violations
 
-    -- Remove character from combat logs
-    delete from combat_log_items_used
-    where combat_log_id in (
-        select id from combat_log where actor_id = p_character_id or target_id = p_character_id
-    );
-
-    delete from round_logs
-    where logs_id in (
-        select id from combat_log where actor_id = p_character_id or target_id = p_character_id
-    );
-
-    delete from combat_log
-    where actor_id = p_character_id or target_id = p_character_id;
-
     -- Remove character from rounds
     delete from round_participants
     where participants_id = p_character_id;
@@ -68,14 +54,36 @@ begin
     delete from location_characters
     where characters_id = p_character_id;
 
-    -- Finally, delete the character record
-    delete from character
-    where id = p_character_id;
-
-    -- Delete the character's inventory
-    delete from inventory
-    where id = v_inventory_id;
 end;
 $$ language plpgsql;
 
 alter function sp_handle_player_death(bigint) owner to postgres;
+
+
+create or replace function is_character_dead(
+    p_character_id bigint
+) returns boolean as $$
+    declare
+        v_is_dead boolean;
+        v_character_id integer;
+    begin
+        select c.id
+            from character c
+            where id = p_character_id
+        into v_character_id;
+
+        if v_character_id is null then
+            return true;
+        end if;
+
+        select c.hp <= 0 into v_is_dead
+            from character c
+            where id = p_character_id;
+
+
+        raise notice 'Character % is % dead', p_character_id, v_is_dead;
+        return v_is_dead;
+    end;
+$$ language plpgsql;
+
+alter function is_character_dead(bigint) owner to postgres;

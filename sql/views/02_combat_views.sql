@@ -1,7 +1,7 @@
 -- DnD Combat System Database Schema - Combat Views
 
 -- View: Combat Activity Summary
-create view combat_activity_summary as
+create or replace view combat_activity_summary as
 select
     cl.actor_id,
     c.name as actor_name,
@@ -19,7 +19,7 @@ group by
     cl.actor_id, c.name;
 
 -- View: Damage Received Summary
-create view damage_received_summary as
+create or replace view damage_received_summary as
 select
     cl.target_id,
     c.name as target_name,
@@ -27,7 +27,7 @@ select
     sum(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as total_damage_received,
     sum(cl.impact) filter (where s.spell_impact_type = 'HEALING') as total_healing_received,
     avg(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as avg_damage_per_hit,
-    max(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as max_damage_received
+    max(cl.impact) filter (where s.spell_impact_type = 'HEALING') as max_damage_received
 from
     combat_log cl
         join character c on cl.target_id = c.id
@@ -36,7 +36,7 @@ group by
     cl.target_id, c.name;
 
 -- View: Current Combat State
-create view current_combat_state as
+create or replace view current_combat_state as
 select
     l.id as location_id,
     l.name as location_name,
@@ -56,7 +56,7 @@ group by
     l.id, l.name, r.id, r.index;
 
 -- View: Combat Round Summary
-create view combat_round_summary as
+create or replace view combat_round_summary as
 select
     r.id as round_id,
     r.index,

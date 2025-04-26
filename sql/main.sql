@@ -9,7 +9,7 @@
 -- Functions
 \i sql/functions/01_attribute_functions.sql
 \i sql/functions/02_spell_functions.sql
-
+\i sql/functions/03_inventory_functions.sql
 -- Procedures
 \i sql/procedures/01_spell_procedures.sql
 \i sql/procedures/02_rest_procedure.sql
@@ -23,10 +23,11 @@
 \i sql/views/01_character_views.sql
 \i sql/views/02_combat_views.sql
 \i sql/views/03_misc_views.sql
+\i sql/views/04_reporting_views.sql
 
 -- Example Data (optional)
 -- Uncomment the following line to load example data
--- \i sql/data/01_example_data.sql
+\i sql/data/01_example_data.sql
 
 -- Acceptance Tests (optional)
 -- Uncomment the following line to load acceptance tests

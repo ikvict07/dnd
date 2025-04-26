@@ -10,9 +10,9 @@ set search_path to dnd;
 
 create table item
 (
-    type   smallint,
+    type   item_type,
     weight double precision not null,
-    id     bigint           not null
+    id     serial           not null
         primary key,
     name   varchar(255)
 );
@@ -23,7 +23,7 @@ alter table item
 create table inventory
 (
     capacity double precision not null,
-    id       bigint           not null
+    id       serial           not null
         primary key
 );
 
@@ -34,7 +34,7 @@ create table location
 (
     is_pvp boolean not null,
     name   varchar(255),
-    id     bigint  not null
+    id     serial  not null
         primary key
 );
 
@@ -45,7 +45,7 @@ create table class
 (
     action_points_multiplier double precision not null,
     inventory_multiplier     double precision not null,
-    id                       bigint           not null
+    id                       serial           not null
         primary key,
     armor_class              varchar(255),
     main_attribute           varchar(255),
@@ -59,7 +59,7 @@ create table effect_template
 (
     duration_rounds         integer not null,
     value                   integer not null,
-    id                      bigint  not null
+    id                      serial  not null
         primary key,
     affected_attribute_type varchar(255),
     effect                  varchar(255),
@@ -72,7 +72,7 @@ alter table effect_template
 create table attribute
 (
     value          integer      not null,
-    id             bigint       not null
+    id             serial       not null
         primary key,
     attribute_type varchar(255) not null
 );
@@ -84,7 +84,7 @@ create table round
 (
     index       integer not null,
     is_finished boolean not null,
-    id          bigint  not null
+    id          serial  not null
         primary key
 );
 
@@ -95,7 +95,7 @@ create table armor_set
 (
     damage_reduction double precision not null,
     swiftness        double precision not null,
-    id               bigint           not null
+    id               serial           not null
         primary key,
     item_id          bigint
         references item,
@@ -114,7 +114,7 @@ create table weapon
 (
     action_points_multiplier double precision not null,
     damage_multiplier        double precision not null,
-    id                       bigint           not null
+    id                       serial           not null
         primary key,
     item_id                  bigint
         references item,
@@ -160,15 +160,15 @@ create table spell
     name              varchar(255)     not null,
     is_pvp            boolean          not null,
     range             double precision not null,
-    spell_impact_type smallint,
+    spell_impact_type spell_impact_type,
     value             double precision not null,
     cause_effect_id   bigint
         references effect_template,
-    id                bigint           not null
+    id                serial           not null
         primary key,
-    scales_from       varchar(255),
-    spell_category    varchar(255),
-    spell_element     varchar(255)
+    scales_from       attribute_type[],
+    spell_category    spell_category,
+    spell_element     element
 );
 
 alter table spell
@@ -179,7 +179,7 @@ create table effect
     rounds_left        integer not null,
     effect_template_id bigint
         references effect_template,
-    id                 bigint  not null
+    id                 serial  not null
         primary key
 );
 
@@ -190,7 +190,7 @@ create table potion
 (
     cause_effect_id bigint
         references effect_template,
-    id              bigint not null
+    id              serial not null
         primary key,
     item_id         bigint
         references item,
@@ -205,7 +205,7 @@ create unique index potion_item_id_key
 
 create table combat
 (
-    id          bigint not null
+    id          serial not null
         primary key,
     location_id bigint
         references location
@@ -224,7 +224,7 @@ create table character
         references armor_set,
     character_class_id bigint
         references class,
-    id                 bigint           not null
+    id                 serial           not null
         primary key,
     inventory_id       bigint
         references inventory,
@@ -332,7 +332,7 @@ create table combat_log
         references character,
     caused_effect_id    bigint
         references effect,
-    id                  bigint  not null
+    id                  serial  not null
         primary key,
     target_id           bigint
         references character

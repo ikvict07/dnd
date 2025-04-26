@@ -24,10 +24,10 @@ select
     l.id as location_id,
     l.name as location_name,
     count(it.id) as items_on_floor,
-    sum(case when it.type = 0 then 1 else 0 end) as armor_count,
-    sum(case when it.type = 1 then 1 else 0 end) as weapon_count,
-    sum(case when it.type = 2 then 1 else 0 end) as potion_count,
-    sum(case when it.type = 3 then 1 else 0 end) as trophy_count,
+    sum(case when it.type = 'ARMOR' then 1 else 0 end) as armor_count,
+    sum(case when it.type = 'WEAPON' then 1 else 0 end) as weapon_count,
+    sum(case when it.type = 'POTION' then 1 else 0 end) as potion_count,
+    sum(case when it.type = 'TROPHY' then 1 else 0 end) as trophy_count,
     sum(it.weight) as total_weight
 from
     location l
