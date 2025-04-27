@@ -1,5 +1,3 @@
--- DnD Combat System Database Schema - Character Views
-
 -- View: Character Stats Summary
 create or replace view character_stats_summary as
 select

@@ -22,10 +22,8 @@ begin
 
     v_primary_attribute := v_scales_from[1]::attribute_type;
 
-    -- Get primary attribute value
     v_primary_attribute_value := get_attribute_value(p_actor_id, v_primary_attribute);
 
-    -- Get weapon damage if applicable
     if v_spell_impact_type = 'DAMAGE'::spell_impact_type then
         select coalesce(w.damage_multiplier, 0) into v_weapon_damage
         from character c
@@ -33,10 +31,8 @@ begin
         where c.id = p_actor_id;
     end if;
 
-    -- Calculate impact
     v_impact := v_base_value * (1 + (v_primary_attribute_value / 50.0)) + (v_weapon_damage * 0.5);
 
-    -- Check for resistance
     select a.protects_from into v_target_resistant_element
     from character c
              join armor_set a on c.armor_set_id = a.id
@@ -174,19 +170,15 @@ begin
         end if;
     end if;
 
-    -- Check if the spell has an effect template
     if v_effect_template_id is not null and (p_hit_roll >= v_armor_class_value or v_spell_impact_type = 'HEALING') then
-        -- Get the duration from the effect template
         select duration_rounds into v_duration_rounds
         from effect_template
         where id = v_effect_template_id;
 
-        -- Create a new effect based on the template
         insert into effect ( effect_template_id, rounds_left)
         values (v_effect_template_id, v_duration_rounds)
         returning id into v_effect_id;
 
-        -- Apply the effect to the target character
         insert into character_under_effects (character_id, under_effects_id)
         values (p_target_id, v_effect_id);
     end if;
@@ -217,19 +209,14 @@ declare
     v_hit_roll integer;
     v_spell_impact integer;
 begin
-    -- Get the spell's scaling attribute
     select scales_from into v_spell_scales_from
     from spell
     where id = p_spell_id;
 
-    -- Get the primary attribute for the spell
     v_primary_attribute := v_spell_scales_from[1]::attribute_type;
 
-    -- Calculate the hit roll based on the primary attribute
     v_hit_roll := calculate_hit_roll(p_caster_id, v_primary_attribute);
 
-    -- Apply the spell effect and get the impact value
-    -- This will also create and apply any effect templates associated with the spell
     v_spell_impact := apply_spell_effect(p_caster_id, p_target_id, p_spell_id, v_hit_roll);
 
     return v_spell_impact;

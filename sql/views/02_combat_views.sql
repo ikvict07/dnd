@@ -1,5 +1,3 @@
--- DnD Combat System Database Schema - Combat Views
-
 -- View: Combat Activity Summary
 create or replace view combat_activity_summary as
 select

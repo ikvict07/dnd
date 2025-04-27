@@ -4,9 +4,12 @@ $$
 DECLARE
     v_value INTEGER;
 BEGIN
-    SELECT value INTO v_value
-    FROM attribute join character_attributes on attribute.id = character_attributes.attributes_id
-    WHERE character_id = p_character_id AND attribute_type::text = p_attribute_type::text;
+    SELECT value
+    INTO v_value
+    FROM attribute
+             join character_attributes on attribute.id = character_attributes.attributes_id
+    WHERE character_id = p_character_id
+      AND attribute_type::text = p_attribute_type::text;
 
     RETURN coalesce(v_value, 0);
 END;

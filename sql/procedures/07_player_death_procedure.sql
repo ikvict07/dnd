@@ -1,4 +1,3 @@
--- Procedure to handle a character's death
 create or replace procedure sp_handle_player_death(
     p_character_id bigint
 ) as $$
@@ -7,7 +6,6 @@ declare
     v_inventory_id bigint;
     v_item_id bigint;
 begin
-    -- Get character's location and inventory
     select location_id, inventory_id
     into v_location_id, v_inventory_id
     from character
@@ -17,40 +15,30 @@ begin
         raise exception 'Character not found or missing location/inventory';
     end if;
 
-    -- Drop all items from character's inventory to their current location
     for v_item_id in (
         select items_id
         from inventory_items
         where inventory_id = v_inventory_id
     ) loop
-            -- Add item to location floor
             insert into location_items_on_the_floor (location_id, items_on_the_floor_id)
             values (v_location_id, v_item_id);
 
-            -- Remove item from inventory
             delete from inventory_items
             where inventory_id = v_inventory_id and items_id = v_item_id;
         end loop;
 
-    -- Delete character's records in the correct order to avoid foreign key constraint violations
-
-    -- Remove character from rounds
     delete from round_participants
     where participants_id = p_character_id;
 
-    -- Remove character's effects
     delete from character_under_effects
     where character_id = p_character_id;
 
-    -- Remove character's spells
     delete from character_spells
     where character_id = p_character_id;
 
-    -- Remove character's attributes
     delete from character_attributes
     where character_id = p_character_id;
 
-    -- Remove character from location
     delete from location_characters
     where characters_id = p_character_id;
 

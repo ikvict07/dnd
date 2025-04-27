@@ -1,5 +1,3 @@
--- DnD Combat System Database Schema - Miscellaneous Views
-
 -- View: Spell Usage Statistics
 create or replace view spell_usage_statistics as
 select

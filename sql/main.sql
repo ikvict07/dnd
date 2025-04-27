@@ -1,7 +1,6 @@
 -- This file includes all the SQL files in the correct order to set up the database schema
 
 -- Schema
-\i sql/schema/01_sequences.sql
 \i sql/schema/02_enums.sql
 \i sql/schema/03_tables.sql
 \i sql/schema/04_indexes.sql
@@ -27,7 +26,7 @@
 
 -- Example Data (optional)
 -- Uncomment the following line to load example data
-\i sql/data/01_example_data.sql
+-- \i sql/data/01_example_data.sql
 
 -- Acceptance Tests (optional)
 -- Uncomment the following line to load acceptance tests

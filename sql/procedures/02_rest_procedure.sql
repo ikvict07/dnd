@@ -32,7 +32,7 @@ begin
     from character
     where id = p_character_id;
 
-    perform sp_cast_spell(p_character_id, p_character_id, v_healing_spell_id);
+    call sp_cast_spell(p_character_id, p_character_id, v_healing_spell_id);
 
     select c.character_class_id, cl.action_points_multiplier
     into v_class_id, v_action_points_multiplier

@@ -1,6 +1,3 @@
--- DnD Combat System Database Schema - Additional Indexes
-
--- Additional indexes for optimizing combat and damage calculations
 -- Index for character attributes lookup (used in damage calculations)
 CREATE INDEX idx_character_attributes_character_id ON character_attributes(character_id);
 

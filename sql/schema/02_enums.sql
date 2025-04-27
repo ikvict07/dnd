@@ -1,6 +1,3 @@
--- DnD Combat System Database Schema - Enums
-
--- Enums
 create type attribute_type as enum ('STRENGTH', 'INTELLIGENCE', 'DEXTERITY', 'CONSTITUTION', 'HEALTH');
 alter type attribute_type owner to postgres;
 

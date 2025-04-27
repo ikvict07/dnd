@@ -14,7 +14,6 @@ create or replace function add_item_to_inventory(
     p_item_id bigint
 ) returns void as $$
 begin
-    -- Check if inventory has enough capacity
     declare
         current_weight numeric;
         item_weight numeric;

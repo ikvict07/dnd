@@ -13,47 +13,37 @@ declare
     v_effect_template_id integer;
     v_effect_id          integer;
 begin
-    -- Validate that the caster has sufficient AP
     select action_points
     into v_caster_ap
     from character
     where id = p_caster_id;
 
-    -- Calculate the effective spell cost based on character attributes
     v_required_ap := calculate_required_ap(p_spell_id, p_caster_id);
 
-    -- Get the spell name
     select name
     into v_spell_name
     from spell
     where id = p_spell_id;
 
-    -- Check if caster has enough AP
     if v_caster_ap < v_required_ap then
         raise exception 'Insufficient action points to cast this spell';
     end if;
 
-    -- Deduct the appropriate AP from the caster
     update character
     set action_points = action_points - v_required_ap
     where id = p_caster_id;
 
-    -- Calculate and apply spell impact
     v_spell_impact := calculate_and_apply_spell_impact(p_caster_id, p_target_id, p_spell_id);
 
-    -- Get effect template associated with the spell (if any)
     select cause_effect_id
     into v_effect_template_id
     from spell
     where id = p_spell_id;
 
-    -- If spell has an effect template, create and apply effect to target
     if v_effect_template_id is not null then
-        -- Use the existing function to apply effect from template to character
         v_effect_id := sp_apply_effect_from_template(v_effect_template_id, p_target_id);
     end if;
 
-    -- Log the spell casting event in the combat log
     insert into combat_log (
                             action_points_spent,
                             impact,
@@ -79,7 +69,6 @@ begin
             p_target_id)
     returning id into v_log_id;
 
-    -- Add log to current round if in combat
     insert into round_logs (logs_id, round_id)
     select v_log_id, r.id
     from round r

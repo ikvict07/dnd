@@ -1,7 +1,4 @@
--- DnD Combat System Database Schema - Reporting Views
-
 -- View: Combat State
--- Displays the current round, list of active characters, and their remaining AP.
 create view v_combat_state as
 select r.id            as round_id,
        r.index         as round_number,
@@ -22,7 +19,6 @@ where r.is_finished = false
 order by r.id, c.action_points desc;
 
 -- View: Most Damage
--- Ranks characters by total damage dealt across all combats.
 create view v_most_damage as
 select c.id                                                          as character_id,
        c.name                                                        as character_name,
@@ -41,7 +37,6 @@ group by c.id, c.name, c.lvl, cl.name
 order by total_damage_dealt desc;
 
 -- View: Strongest Characters
--- Lists characters ordered by aggregated performance metrics.
 create view v_strongest_characters as
 select c.id                                                                    as character_id,
        c.name                                                                  as character_name,
@@ -77,7 +72,6 @@ group by c.id, c.name, c.lvl, c.hp, cl.name
 order by performance_score desc;
 
 -- View: Combat Damage
--- Summarizes total damage inflicted in each combat session.
 create view v_combat_damage as
 select c.id                                                  as combat_id,
        l.name                                                as location_name,
@@ -99,7 +93,6 @@ group by c.id, l.name
 order by total_damage_dealt desc;
 
 -- View: Spell Statistics
--- Spell usage and damage statistics.
 create view v_spell_statistics as
 select s.id                                                                                         as spell_id,
        s.name                                                                                       as spell_name,
