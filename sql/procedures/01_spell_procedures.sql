@@ -26,7 +26,7 @@ begin
     where id = p_spell_id;
 
     if v_caster_ap < v_required_ap then
-        raise exception 'Insufficient action points to cast this spell';
+        raise exception 'insufficient action points to cast this spell';
     end if;
 
     update character
@@ -55,10 +55,10 @@ begin
             v_required_ap,
             v_spell_impact,
             case
-                when v_spell_impact > 0 then 'Cast spell: ' || v_spell_name || ' - Hit for ' || v_spell_impact ||
+                when v_spell_impact > 0 then 'cast spell: ' || v_spell_name || ' - hit for ' || v_spell_impact ||
                                              ' damage'
-                when v_spell_impact = 0 then 'Cast spell: ' || v_spell_name || ' - Missed'
-                else 'Cast spell: ' || v_spell_name || ' - Healed for ' || abs(v_spell_impact)
+                when v_spell_impact = 0 then 'cast spell: ' || v_spell_name || ' - missed'
+                else 'cast spell: ' || v_spell_name || ' - healed for ' || abs(v_spell_impact)
                 end ||
             case
                 when v_effect_template_id is not null then ' (with effect)'

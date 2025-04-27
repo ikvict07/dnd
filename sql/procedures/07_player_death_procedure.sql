@@ -12,7 +12,7 @@ begin
     where id = p_character_id;
 
     if v_location_id is null or v_inventory_id is null then
-        raise exception 'Character not found or missing location/inventory';
+        raise exception 'character not found or missing location/inventory';
     end if;
 
     for v_item_id in (
@@ -69,7 +69,7 @@ create or replace function is_character_dead(
             where id = p_character_id;
 
 
-        raise notice 'Character % is % dead', p_character_id, v_is_dead;
+        raise notice 'character % is % dead', p_character_id, v_is_dead;
         return v_is_dead;
     end;
 $$ language plpgsql;

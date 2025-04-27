@@ -1,666 +1,666 @@
-SET search_path TO dnd;
+set search_path to dnd;
 
--- Test Setup: Create test data
-INSERT INTO location (is_pvp, name)
-VALUES (false, 'Safe Haven'), -- Non-PvP location for resting
-       (true, 'Battleground'); -- PvP location for combat
+-- test setup: create test data
+insert into location (is_pvp, name)
+values (false, 'safe haven'), -- non-pvp location for resting
+       (true, 'battleground'); -- pvp location for combat
 
-INSERT INTO class (action_points_multiplier, inventory_multiplier, armor_class, main_attribute, name)
-VALUES (1.2, 1.5, 'HEAVY', 'STRENGTH', 'Warrior'),
-       (0.8, 1.0, 'CLOTH', 'INTELLIGENCE', 'Mage'),
-       (1.0, 1.2, 'LEATHER', 'DEXTERITY', 'Rogue');
+insert into class (action_points_multiplier, inventory_multiplier, armor_class, main_attribute, name)
+values (1.2, 1.5, 'heavy', 'strength', 'warrior'),
+       (0.8, 1.0, 'cloth', 'intelligence', 'mage'),
+       (1.0, 1.2, 'leather', 'dexterity', 'rogue');
 
-INSERT INTO attribute (value, attribute_type)
-VALUES (20, 'STRENGTH'),
-       (20, 'INTELLIGENCE'),
-       (20, 'DEXTERITY'),
-       (20, 'CONSTITUTION'),
-       (100, 'HEALTH'),
-       (10, 'STRENGTH'),
-       (30, 'INTELLIGENCE'),
-       (15, 'DEXTERITY'),
-       (15, 'CONSTITUTION'),
-       (80, 'HEALTH'),
-       (15, 'STRENGTH'),
-       (15, 'INTELLIGENCE'),
-       (25, 'DEXTERITY'),
-       (15, 'CONSTITUTION'),
-       (90, 'HEALTH');
+insert into attribute (value, attribute_type)
+values (20, 'strength'),
+       (20, 'intelligence'),
+       (20, 'dexterity'),
+       (20, 'constitution'),
+       (100, 'health'),
+       (10, 'strength'),
+       (30, 'intelligence'),
+       (15, 'dexterity'),
+       (15, 'constitution'),
+       (80, 'health'),
+       (15, 'strength'),
+       (15, 'intelligence'),
+       (25, 'dexterity'),
+       (15, 'constitution'),
+       (90, 'health');
 
-INSERT INTO effect_template (duration_rounds, value, affected_attribute_type, effect, effect_name)
-VALUES (3, 5, 'STRENGTH', 'BUFF', 'Strength Boost'),
-       (3, 5, 'DEXTERITY', 'DE_BUFF', 'Slow'),
-       (2, 10, 'HEALTH', 'BUFF', 'Regeneration');
+insert into effect_template (duration_rounds, value, affected_attribute_type, effect, effect_name)
+values (3, 5, 'strength', 'buff', 'strength boost'),
+       (3, 5, 'dexterity', 'de_buff', 'slow'),
+       (2, 10, 'health', 'buff', 'regeneration');
 
-INSERT INTO spell (base_cost, name, is_pvp, range, spell_impact_type, value, spell_category, spell_element, scales_from)
-VALUES (5, 'Fireball', true, 30.0, 'DAMAGE', 20.0, 'MAGIC', 'FIRE', '{INTELLIGENCE}'),
-       (3, 'Heal', false, 10.0, 'HEALING', 15.0, 'MAGIC', 'HOLY', '{INTELLIGENCE}'),
-       (2, 'Slash', true, 5.0, 'DAMAGE', 10.0, 'MELEE', 'PHYSICAL', '{STRENGTH}'),
-       (0, 'Rest', false, 0.0, 'HEALING', 30.0, 'MAGIC', 'HOLY', '{CONSTITUTION}');
+insert into spell (base_cost, name, is_pvp, range, spell_impact_type, value, spell_category, spell_element, scales_from)
+values (5, 'fireball', true, 30.0, 'damage', 20.0, 'magic', 'fire', '{intelligence}'),
+       (3, 'heal', false, 10.0, 'healing', 15.0, 'magic', 'holy', '{intelligence}'),
+       (2, 'slash', true, 5.0, 'damage', 10.0, 'melee', 'physical', '{strength}'),
+       (0, 'rest', false, 0.0, 'healing', 30.0, 'magic', 'holy', '{constitution}');
 
--- Link spells with effect templates
-UPDATE spell
-SET cause_effect_id = (SELECT id FROM effect_template WHERE effect_name = 'Strength Boost')
-WHERE name = 'Fireball';
-UPDATE spell
-SET cause_effect_id = (SELECT id FROM effect_template WHERE effect_name = 'Regeneration')
-WHERE name = 'Heal';
-UPDATE spell
-SET cause_effect_id = (SELECT id FROM effect_template WHERE effect_name = 'Slow')
-WHERE name = 'Slash';
+-- link spells with effect templates
+update spell
+set cause_effect_id = (select id from effect_template where effect_name = 'strength boost')
+where name = 'fireball';
+update spell
+set cause_effect_id = (select id from effect_template where effect_name = 'regeneration')
+where name = 'heal';
+update spell
+set cause_effect_id = (select id from effect_template where effect_name = 'slow')
+where name = 'slash';
 
-INSERT INTO item (type, weight, name)
-VALUES ('ARMOR', 15.0, 'Plate Armor'),
-       ('WEAPON', 5.0, 'Longsword'),
-       ('POTION', 0.5, 'Health Potion'),
-       ('ARMOR', 8.0, 'Robe'),
-       ('WEAPON', 2.0, 'Staff'),
-       ('POTION', 0.5, 'Mana Potion'),
-       ('ARMOR', 10.0, 'Leather Armor'),
-       ('WEAPON', 3.0, 'Dagger'),
-       ('POTION', 0.5, 'Swiftness Potion');
+insert into item (type, weight, name)
+values ('armor', 15.0, 'plate armor'),
+       ('weapon', 5.0, 'longsword'),
+       ('potion', 0.5, 'health potion'),
+       ('armor', 8.0, 'robe'),
+       ('weapon', 2.0, 'staff'),
+       ('potion', 0.5, 'mana potion'),
+       ('armor', 10.0, 'leather armor'),
+       ('weapon', 3.0, 'dagger'),
+       ('potion', 0.5, 'swiftness potion');
 
-INSERT INTO armor_set (damage_reduction, swiftness, item_id, armor_class, name, protects_from)
-VALUES (0.3, 0.7, 1, 'HEAVY', 'Plate Armor', 'PHYSICAL'),
-       (0.1, 1.0, 4, 'CLOTH', 'Mage Robe', 'MAGIC'),
-       (0.2, 0.9, 7, 'LEATHER', 'Leather Armor', 'PHYSICAL');
+insert into armor_set (damage_reduction, swiftness, item_id, armor_class, name, protects_from)
+values (0.3, 0.7, 1, 'heavy', 'plate armor', 'physical'),
+       (0.1, 1.0, 4, 'cloth', 'mage robe', 'magic'),
+       (0.2, 0.9, 7, 'leather', 'leather armor', 'physical');
 
-INSERT INTO weapon (action_points_multiplier, damage_multiplier, item_id, name, scales_from)
-VALUES (1.0, 1.5, 2, 'Longsword', 'STRENGTH'),
-       (0.8, 1.8, 5, 'Staff', 'INTELLIGENCE'),
-       (0.7, 1.3, 8, 'Dagger', 'DEXTERITY');
+insert into weapon (action_points_multiplier, damage_multiplier, item_id, name, scales_from)
+values (1.0, 1.5, 2, 'longsword', 'strength'),
+       (0.8, 1.8, 5, 'staff', 'intelligence'),
+       (0.7, 1.3, 8, 'dagger', 'dexterity');
 
-INSERT INTO potion (item_id, name)
-VALUES (3, 'Health Potion'),
-       (6, 'Mana Potion'),
-       (9, 'Swiftness Potion');
+insert into potion (item_id, name)
+values (3, 'health potion'),
+       (6, 'mana potion'),
+       (9, 'swiftness potion');
 
--- Link potions with effect templates
-UPDATE potion
-SET cause_effect_id = (SELECT id FROM effect_template WHERE effect_name = 'Regeneration')
-WHERE name = 'Health Potion';
-UPDATE potion
-SET cause_effect_id = (SELECT id FROM effect_template WHERE effect_name = 'Strength Boost')
-WHERE name = 'Mana Potion';
-UPDATE potion
-SET cause_effect_id = (SELECT id FROM effect_template WHERE effect_name = 'Slow')
-WHERE name = 'Swiftness Potion';
+-- link potions with effect templates
+update potion
+set cause_effect_id = (select id from effect_template where effect_name = 'regeneration')
+where name = 'health potion';
+update potion
+set cause_effect_id = (select id from effect_template where effect_name = 'strength boost')
+where name = 'mana potion';
+update potion
+set cause_effect_id = (select id from effect_template where effect_name = 'slow')
+where name = 'swiftness potion';
 
-INSERT INTO inventory (capacity)
-VALUES (50.0),
+insert into inventory (capacity)
+values (50.0),
        (40.0),
        (45.0);
 
-INSERT INTO character (action_points, hp, lvl, xp, armor_set_id, character_class_id, inventory_id, location_id,
+insert into character (action_points, hp, lvl, xp, armor_set_id, character_class_id, inventory_id, location_id,
                        weapon_id, name)
-VALUES (12, 100.0, 1, 0.0, 1, 1, 1, 1, 1, 'Warrior1'),
-       (8, 80.0, 1, 0.0, 2, 2, 2, 1, 2, 'Mage1'),
-       (10, 90.0, 1, 0.0, 3, 3, 3, 2, 3, 'Rogue1');
+values (12, 100.0, 1, 0.0, 1, 1, 1, 1, 1, 'warrior1'),
+       (8, 80.0, 1, 0.0, 2, 2, 2, 1, 2, 'mage1'),
+       (10, 90.0, 1, 0.0, 3, 3, 3, 2, 3, 'rogue1');
 
--- Link characters with attributes
-INSERT INTO character_attributes (character_id, attributes_id)
-VALUES (1, 1),  -- Warrior - STRENGTH
-       (1, 2),  -- Warrior - INTELLIGENCE
-       (1, 3),  -- Warrior - DEXTERITY
-       (1, 4),  -- Warrior - CONSTITUTION
-       (1, 5),  -- Warrior - HEALTH
-       (2, 6),  -- Mage - STRENGTH
-       (2, 7),  -- Mage - INTELLIGENCE
-       (2, 8),  -- Mage - DEXTERITY
-       (2, 9),  -- Mage - CONSTITUTION
-       (2, 10), -- Mage - HEALTH
-       (3, 11), -- Rogue - STRENGTH
-       (3, 12), -- Rogue - INTELLIGENCE
-       (3, 13), -- Rogue - DEXTERITY
-       (3, 14), -- Rogue - CONSTITUTION
+-- link characters with attributes
+insert into character_attributes (character_id, attributes_id)
+values (1, 1),  -- warrior - strength
+       (1, 2),  -- warrior - intelligence
+       (1, 3),  -- warrior - dexterity
+       (1, 4),  -- warrior - constitution
+       (1, 5),  -- warrior - health
+       (2, 6),  -- mage - strength
+       (2, 7),  -- mage - intelligence
+       (2, 8),  -- mage - dexterity
+       (2, 9),  -- mage - constitution
+       (2, 10), -- mage - health
+       (3, 11), -- rogue - strength
+       (3, 12), -- rogue - intelligence
+       (3, 13), -- rogue - dexterity
+       (3, 14), -- rogue - constitution
        (3, 15);
--- Rogue - HEALTH
+-- rogue - health
 
--- Link characters with spells
-INSERT INTO character_spells (character_id, spells_id)
-VALUES (1, 3), -- Warrior knows Slash
-       (2, 1), -- Mage knows Fireball
-       (2, 2), -- Mage knows Heal
+-- link characters with spells
+insert into character_spells (character_id, spells_id)
+values (1, 3), -- warrior knows slash
+       (2, 1), -- mage knows fireball
+       (2, 2), -- mage knows heal
        (3, 3);
--- Rogue knows Slash
+-- rogue knows slash
 
--- Link characters with locations
-INSERT INTO location_characters (characters_id, location_id)
-VALUES (1, 1), -- Warrior in Safe Haven
-       (2, 1), -- Mage in Safe Haven
+-- link characters with locations
+insert into location_characters (characters_id, location_id)
+values (1, 1), -- warrior in safe haven
+       (2, 1), -- mage in safe haven
        (3, 2);
--- Rogue in Battleground
+-- rogue in battleground
 
--- Add items to inventories
-INSERT INTO inventory_items (inventory_id, items_id)
-VALUES (1, 3), -- Warrior has Health Potion
-       (2, 6), -- Mage has Mana Potion
+-- add items to inventories
+insert into inventory_items (inventory_id, items_id)
+values (1, 3), -- warrior has health potion
+       (2, 6), -- mage has mana potion
        (3, 9);
--- Rogue has Swiftness Potion
+-- rogue has swiftness potion
 
 -- =============================================
--- Test 1: Test get_attribute_value function
+-- test 1: test get_attribute_value function
 -- =============================================
-DO
+do
 $$
-    DECLARE
-        v_strength     INTEGER;
-        v_intelligence INTEGER;
-        v_dexterity    INTEGER;
-        v_constitution INTEGER;
-        v_health       INTEGER;
-    BEGIN
-        -- Test for Warrior
-        v_strength := get_attribute_value(1, 'STRENGTH');
-        v_intelligence := get_attribute_value(1, 'INTELLIGENCE');
-        v_dexterity := get_attribute_value(1, 'DEXTERITY');
-        v_constitution := get_attribute_value(1, 'CONSTITUTION');
-        v_health := get_attribute_value(1, 'HEALTH');
+    declare
+        v_strength     integer;
+        v_intelligence integer;
+        v_dexterity    integer;
+        v_constitution integer;
+        v_health       integer;
+    begin
+        -- test for warrior
+        v_strength := get_attribute_value(1, 'strength');
+        v_intelligence := get_attribute_value(1, 'intelligence');
+        v_dexterity := get_attribute_value(1, 'dexterity');
+        v_constitution := get_attribute_value(1, 'constitution');
+        v_health := get_attribute_value(1, 'health');
 
-        ASSERT v_strength = 20, 'Warrior strength should be 20';
-        ASSERT v_intelligence = 20, 'Warrior intelligence should be 20';
-        ASSERT v_dexterity = 20, 'Warrior dexterity should be 20';
-        ASSERT v_constitution = 20, 'Warrior constitution should be 20';
-        ASSERT v_health = 100, 'Warrior health should be 100';
+        assert v_strength = 20, 'warrior strength should be 20';
+        assert v_intelligence = 20, 'warrior intelligence should be 20';
+        assert v_dexterity = 20, 'warrior dexterity should be 20';
+        assert v_constitution = 20, 'warrior constitution should be 20';
+        assert v_health = 100, 'warrior health should be 100';
 
-        -- Test for Mage
-        v_strength := get_attribute_value(2, 'STRENGTH');
-        v_intelligence := get_attribute_value(2, 'INTELLIGENCE');
+        -- test for mage
+        v_strength := get_attribute_value(2, 'strength');
+        v_intelligence := get_attribute_value(2, 'intelligence');
 
-        ASSERT v_strength = 10, 'Mage strength should be 10';
-        ASSERT v_intelligence = 30, 'Mage intelligence should be 30';
+        assert v_strength = 10, 'mage strength should be 10';
+        assert v_intelligence = 30, 'mage intelligence should be 30';
 
-        -- Test for Rogue
-        v_dexterity := get_attribute_value(3, 'DEXTERITY');
+        -- test for rogue
+        v_dexterity := get_attribute_value(3, 'dexterity');
 
-        ASSERT v_dexterity = 25, 'Rogue dexterity should be 25';
+        assert v_dexterity = 25, 'rogue dexterity should be 25';
 
-        RAISE NOTICE 'Test 1: get_attribute_value function - PASSED';
-    END
+        raise notice 'test 1: get_attribute_value function - passed';
+    end
 $$;
 
--- Test 2: Test sp_rest_character procedure
-DO
+-- test 2: test sp_rest_character procedure
+do
 $$
-    DECLARE
-        v_initial_hp       DOUBLE PRECISION;
-        v_after_rest_hp    DOUBLE PRECISION;
-        v_exception_caught BOOLEAN;
-    BEGIN
-        SELECT hp INTO v_initial_hp FROM character WHERE id = 1;
+    declare
+        v_initial_hp       double precision;
+        v_after_rest_hp    double precision;
+        v_exception_caught boolean;
+    begin
+        select hp into v_initial_hp from character where id = 1;
 
-        UPDATE character SET hp = 50.0 WHERE id = 1;
+        update character set hp = 50.0 where id = 1;
 
-        -- Test resting for Warrior in non-PvP location
-        BEGIN
-            CALL sp_rest_character(1);
+        -- test resting for warrior in non-pvp location
+        begin
+            call sp_rest_character(1);
 
-            -- Get HP after rest
-            SELECT hp INTO v_after_rest_hp FROM character WHERE id = 1;
+            -- get hp after rest
+            select hp into v_after_rest_hp from character where id = 1;
 
-            -- HP should be higher after rest
-            ASSERT v_after_rest_hp > 50.0, 'HP should increase after rest';
+            -- hp should be higher after rest
+            assert v_after_rest_hp > 50.0, 'hp should increase after rest';
 
-            RAISE NOTICE 'Test 2.1: sp_rest_character in non-PvP location - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 2.1: sp_rest_character in non-PvP location - FAILED: %', SQLERRM;
-        END;
+            raise notice 'test 2.1: sp_rest_character in non-pvp location - passed';
+        exception
+            when others then
+                raise notice 'test 2.1: sp_rest_character in non-pvp location - failed: %', sqlerrm;
+        end;
 
-        -- Test resting for Rogue in PvP location (should fail)
-        v_exception_caught := FALSE;
-        BEGIN
-            CALL sp_rest_character(3);
-        EXCEPTION
-            WHEN OTHERS THEN
-                v_exception_caught := TRUE;
-        END;
+        -- test resting for rogue in pvp location (should fail)
+        v_exception_caught := false;
+        begin
+            call sp_rest_character(3);
+        exception
+            when others then
+                v_exception_caught := true;
+        end;
 
-        ASSERT v_exception_caught, 'Resting in PvP location should throw an exception';
+        assert v_exception_caught, 'resting in pvp location should throw an exception';
 
-        RAISE NOTICE 'Test 2.2: sp_rest_character in PvP location - PASSED';
+        raise notice 'test 2.2: sp_rest_character in pvp location - passed';
 
-        UPDATE character SET hp = v_initial_hp WHERE id = 1;
-    END
+        update character set hp = v_initial_hp where id = 1;
+    end
 $$;
 
--- Test 3: Test sp_cast_spell procedure
-DO
+-- test 3: test sp_cast_spell procedure
+do
 $$
-    DECLARE
-        v_initial_hp_target     DOUBLE PRECISION;
-        v_after_spell_hp_target DOUBLE PRECISION;
-        v_initial_ap_caster     INTEGER;
-        v_after_spell_ap_caster INTEGER;
-        v_effect_count          INTEGER;
-        v_exception_caught      BOOLEAN;
-    BEGIN
-        UPDATE character SET location_id = 2 WHERE id = 2;
-        UPDATE location_characters SET location_id = 2 WHERE characters_id = 2;
+    declare
+        v_initial_hp_target     double precision;
+        v_after_spell_hp_target double precision;
+        v_initial_ap_caster     integer;
+        v_after_spell_ap_caster integer;
+        v_effect_count          integer;
+        v_exception_caught      boolean;
+    begin
+        update character set location_id = 2 where id = 2;
+        update location_characters set location_id = 2 where characters_id = 2;
 
-        SELECT hp INTO v_initial_hp_target FROM character WHERE id = 3; -- Rogue
-        SELECT action_points INTO v_initial_ap_caster FROM character WHERE id = 2; -- Mage
+        select hp into v_initial_hp_target from character where id = 3; -- rogue
+        select action_points into v_initial_ap_caster from character where id = 2; -- mage
 
-        BEGIN
-            CALL sp_cast_spell(2, 3, 1); -- Mage casts Fireball on Rogue
+        begin
+            call sp_cast_spell(2, 3, 1); -- mage casts fireball on rogue
 
-            SELECT hp INTO v_after_spell_hp_target FROM character WHERE id = 3; -- Rogue
-            SELECT action_points INTO v_after_spell_ap_caster FROM character WHERE id = 2; -- Mage
+            select hp into v_after_spell_hp_target from character where id = 3; -- rogue
+            select action_points into v_after_spell_ap_caster from character where id = 2; -- mage
 
-            ASSERT v_after_spell_hp_target < v_initial_hp_target, 'Target HP should decrease after damage spell';
+            assert v_after_spell_hp_target < v_initial_hp_target, 'target hp should decrease after damage spell';
 
-            ASSERT v_after_spell_ap_caster < v_initial_ap_caster, 'Caster AP should decrease after casting spell';
+            assert v_after_spell_ap_caster < v_initial_ap_caster, 'caster ap should decrease after casting spell';
 
-            -- Check if effect was applied
-            SELECT COUNT(*)
-            INTO v_effect_count
-            FROM effect e
-                     JOIN character_under_effects cue ON e.id = cue.under_effects_id
-            WHERE cue.character_id = 3;
+            -- check if effect was applied
+            select count(*)
+            into v_effect_count
+            from effect e
+                     join character_under_effects cue on e.id = cue.under_effects_id
+            where cue.character_id = 3;
 
-            ASSERT v_effect_count > 0, 'Effect should be applied to target';
+            assert v_effect_count > 0, 'effect should be applied to target';
 
-            RAISE NOTICE 'Test 3.1: sp_cast_spell (damage spell) - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 3.1: sp_cast_spell (damage spell) - FAILED: %', SQLERRM;
-        END;
+            raise notice 'test 3.1: sp_cast_spell (damage spell) - passed';
+        exception
+            when others then
+                raise notice 'test 3.1: sp_cast_spell (damage spell) - failed: %', sqlerrm;
+        end;
 
-        UPDATE character SET hp = v_initial_hp_target WHERE id = 3;
-        UPDATE character SET action_points = v_initial_ap_caster WHERE id = 2;
-        DELETE FROM character_under_effects WHERE character_id = 3;
-        DELETE FROM effect;
+        update character set hp = v_initial_hp_target where id = 3;
+        update character set action_points = v_initial_ap_caster where id = 2;
+        delete from character_under_effects where character_id = 3;
+        delete from effect;
 
-        UPDATE character SET location_id = 1 WHERE id = 2;
-        UPDATE location_characters SET location_id = 1 WHERE characters_id = 2;
+        update character set location_id = 1 where id = 2;
+        update location_characters set location_id = 1 where characters_id = 2;
 
-        -- Test casting Heal (healing spell)
-        BEGIN
-            -- Set Warrior HP to a lower value
-            UPDATE character SET hp = 50.0 WHERE id = 1;
+        -- test casting heal (healing spell)
+        begin
+            -- set warrior hp to a lower value
+            update character set hp = 50.0 where id = 1;
 
-            SELECT hp INTO v_initial_hp_target FROM character WHERE id = 1; -- Warrior
-            SELECT action_points INTO v_initial_ap_caster FROM character WHERE id = 2; -- Mage
+            select hp into v_initial_hp_target from character where id = 1; -- warrior
+            select action_points into v_initial_ap_caster from character where id = 2; -- mage
 
-            CALL sp_cast_spell(2, 1, 2); -- Mage casts Heal on Warrior
+            call sp_cast_spell(2, 1, 2); -- mage casts heal on warrior
 
-            SELECT hp INTO v_after_spell_hp_target FROM character WHERE id = 1; -- Warrior
-            SELECT action_points INTO v_after_spell_ap_caster FROM character WHERE id = 2; -- Mage
+            select hp into v_after_spell_hp_target from character where id = 1; -- warrior
+            select action_points into v_after_spell_ap_caster from character where id = 2; -- mage
 
-            ASSERT v_after_spell_hp_target > v_initial_hp_target, 'Target HP should increase after healing spell';
+            assert v_after_spell_hp_target > v_initial_hp_target, 'target hp should increase after healing spell';
 
-            ASSERT v_after_spell_ap_caster < v_initial_ap_caster, 'Caster AP should decrease after casting spell';
+            assert v_after_spell_ap_caster < v_initial_ap_caster, 'caster ap should decrease after casting spell';
 
-            SELECT COUNT(*)
-            INTO v_effect_count
-            FROM effect e
-                     JOIN character_under_effects cue ON e.id = cue.under_effects_id
-            WHERE cue.character_id = 1;
+            select count(*)
+            into v_effect_count
+            from effect e
+                     join character_under_effects cue on e.id = cue.under_effects_id
+            where cue.character_id = 1;
 
-            ASSERT v_effect_count > 0, 'Effect should be applied to target';
+            assert v_effect_count > 0, 'effect should be applied to target';
 
-            RAISE NOTICE 'Test 3.2: sp_cast_spell (healing spell) - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 3.2: sp_cast_spell (healing spell) - FAILED: %', SQLERRM;
-        END;
+            raise notice 'test 3.2: sp_cast_spell (healing spell) - passed';
+        exception
+            when others then
+                raise notice 'test 3.2: sp_cast_spell (healing spell) - failed: %', sqlerrm;
+        end;
 
-        -- Test insufficient AP (should fail)
-        BEGIN
-            -- Set Mage AP to a very low value
-            UPDATE character SET action_points = 1 WHERE id = 2;
+        -- test insufficient ap (should fail)
+        begin
+            -- set mage ap to a very low value
+            update character set action_points = 1 where id = 2;
 
-            v_exception_caught := FALSE;
-            BEGIN
-                CALL sp_cast_spell(2, 1, 1);
-            EXCEPTION
-                WHEN OTHERS THEN
-                    v_exception_caught := TRUE;
-            END;
+            v_exception_caught := false;
+            begin
+                call sp_cast_spell(2, 1, 1);
+            exception
+                when others then
+                    v_exception_caught := true;
+            end;
 
-            ASSERT v_exception_caught, 'Casting spell with insufficient AP should throw an exception';
+            assert v_exception_caught, 'casting spell with insufficient ap should throw an exception';
 
-            RAISE NOTICE 'Test 3.3: sp_cast_spell (insufficient AP) - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 3.3: sp_cast_spell (insufficient AP) - FAILED: %', SQLERRM;
-        END;
-    END
+            raise notice 'test 3.3: sp_cast_spell (insufficient ap) - passed';
+        exception
+            when others then
+                raise notice 'test 3.3: sp_cast_spell (insufficient ap) - failed: %', sqlerrm;
+        end;
+    end
 $$;
 
--- Test 4: Test combat procedures
-DO
+-- test 4: test combat procedures
+do
 $$
-    DECLARE
-        v_combat_id              INTEGER;
-        v_round_id               INTEGER;
-        v_initial_ap_warrior     INTEGER;
-        v_after_enter_ap_warrior INTEGER;
-        v_after_reset_ap_warrior INTEGER;
-        v_exception_caught       BOOLEAN;
-        v_after_spent_ap_warrior INTEGER;
-    BEGIN
-        UPDATE character SET location_id = 2 WHERE id IN (1, 2);
-        UPDATE location_characters SET location_id = 2 WHERE characters_id IN (1, 2);
+    declare
+        v_combat_id              integer;
+        v_round_id               integer;
+        v_initial_ap_warrior     integer;
+        v_after_enter_ap_warrior integer;
+        v_after_reset_ap_warrior integer;
+        v_exception_caught       boolean;
+        v_after_spent_ap_warrior integer;
+    begin
+        update character set location_id = 2 where id in (1, 2);
+        update location_characters set location_id = 2 where characters_id in (1, 2);
 
-        INSERT INTO combat (location_id) VALUES (2) RETURNING id INTO v_combat_id;
+        insert into combat (location_id) values (2) returning id into v_combat_id;
 
-        INSERT INTO round (index, is_finished) VALUES (1, false) RETURNING id INTO v_round_id;
+        insert into round (index, is_finished) values (1, false) returning id into v_round_id;
 
-        INSERT INTO combat_combat_rounds (combat_id, combat_rounds_id) VALUES (v_combat_id, v_round_id);
+        insert into combat_combat_rounds (combat_id, combat_rounds_id) values (v_combat_id, v_round_id);
 
-        SELECT action_points INTO v_initial_ap_warrior FROM character WHERE id = 1;
+        select action_points into v_initial_ap_warrior from character where id = 1;
 
-        -- Test sp_enter_combat
-        BEGIN
-            CALL sp_enter_combat(v_combat_id, 1); -- Warrior enters combat
+        -- test sp_enter_combat
+        begin
+            call sp_enter_combat(v_combat_id, 1); -- warrior enters combat
 
-            SELECT action_points INTO v_after_enter_ap_warrior FROM character WHERE id = 1;
+            select action_points into v_after_enter_ap_warrior from character where id = 1;
 
-            ASSERT EXISTS (SELECT 1
-                           FROM round_participants
-                           WHERE round_id = v_round_id
-                             AND participants_id = 1), 'Character should be added to round participants';
+            assert exists (select 1
+                           from round_participants
+                           where round_id = v_round_id
+                             and participants_id = 1), 'character should be added to round participants';
 
-            ASSERT v_after_enter_ap_warrior != v_initial_ap_warrior, 'AP should be recalculated after entering combat';
+            assert v_after_enter_ap_warrior != v_initial_ap_warrior, 'ap should be recalculated after entering combat';
 
-            RAISE NOTICE 'Test 4.1: sp_enter_combat - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 4.1: sp_enter_combat - FAILED: %', SQLERRM;
-        END;
+            raise notice 'test 4.1: sp_enter_combat - passed';
+        exception
+            when others then
+                raise notice 'test 4.1: sp_enter_combat - failed: %', sqlerrm;
+        end;
 
-        BEGIN
-            UPDATE character SET location_id = 1 WHERE id = 1;
-            UPDATE location_characters SET location_id = 1 WHERE characters_id = 1;
+        begin
+            update character set location_id = 1 where id = 1;
+            update location_characters set location_id = 1 where characters_id = 1;
 
-            v_exception_caught := FALSE;
-            BEGIN
-                CALL sp_enter_combat(v_combat_id, 1);
-            EXCEPTION
-                WHEN OTHERS THEN
-                    v_exception_caught := TRUE;
-            END;
+            v_exception_caught := false;
+            begin
+                call sp_enter_combat(v_combat_id, 1);
+            exception
+                when others then
+                    v_exception_caught := true;
+            end;
 
-            BEGIN
-                INSERT INTO round_participants (participants_id, round_id)
-                VALUES (1, v_round_id)
-                ON CONFLICT DO NOTHING;
+            begin
+                insert into round_participants (participants_id, round_id)
+                values (1, v_round_id)
+                on conflict do nothing;
 
-                CALL sp_enter_combat(v_combat_id, 2);
+                call sp_enter_combat(v_combat_id, 2);
 
-                CALL sp_reset_round(v_combat_id);
+                call sp_reset_round(v_combat_id);
 
-                ASSERT EXISTS (SELECT 1
-                               FROM round
-                               WHERE id = v_round_id
-                                 AND is_finished = true), 'Old round should be marked as finished';
+                assert exists (select 1
+                               from round
+                               where id = v_round_id
+                                 and is_finished = true), 'old round should be marked as finished';
 
-                ASSERT EXISTS (SELECT 1
-                               FROM round r
-                                        JOIN combat_combat_rounds ccr ON r.id = ccr.combat_rounds_id
-                               WHERE ccr.combat_id = v_combat_id
-                                 AND r.is_finished = false
-                                 AND r.index = 2), 'New round should be created with incremented index';
+                assert exists (select 1
+                               from round r
+                                        join combat_combat_rounds ccr on r.id = ccr.combat_rounds_id
+                               where ccr.combat_id = v_combat_id
+                                 and r.is_finished = false
+                                 and r.index = 2), 'new round should be created with incremented index';
 
-                SELECT action_points INTO v_after_reset_ap_warrior FROM character WHERE id = 1;
+                select action_points into v_after_reset_ap_warrior from character where id = 1;
 
-                UPDATE character SET action_points = action_points - 2 WHERE id = 1;
+                update character set action_points = action_points - 2 where id = 1;
                 select character.action_points from character where id = 1 into v_after_spent_ap_warrior;
 
-                ASSERT v_exception_caught, 'Entering combat from wrong location should throw an exception';
-                UPDATE character SET location_id = 2 WHERE id = 1;
+                assert v_exception_caught, 'entering combat from wrong location should throw an exception';
+                update character set location_id = 2 where id = 1;
 
-                UPDATE location_characters SET location_id = 2 WHERE characters_id = 1;
-                RAISE NOTICE 'Test 4.2: sp_enter_combat (wrong location) - PASSED';
-            EXCEPTION
-                WHEN OTHERS THEN
-                    RAISE NOTICE 'Test 4.2: sp_enter_combat (wrong location) - FAILED: %', SQLERRM;
-            END;
+                update location_characters set location_id = 2 where characters_id = 1;
+                raise notice 'test 4.2: sp_enter_combat (wrong location) - passed';
+            exception
+                when others then
+                    raise notice 'test 4.2: sp_enter_combat (wrong location) - failed: %', sqlerrm;
+            end;
 
-            ASSERT v_after_reset_ap_warrior != v_after_spent_ap_warrior, 'AP should be recalculated after round reset';
+            assert v_after_reset_ap_warrior != v_after_spent_ap_warrior, 'ap should be recalculated after round reset';
 
-            RAISE NOTICE 'Test 4.3: sp_reset_round - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 4.3: sp_reset_round - FAILED: %', SQLERRM;
-        END;
-    END
+            raise notice 'test 4.3: sp_reset_round - passed';
+        exception
+            when others then
+                raise notice 'test 4.3: sp_reset_round - failed: %', sqlerrm;
+        end;
+    end
 $$;
 
--- Test 5: Test item use procedure
-DO
+-- test 5: test item use procedure
+do
 $$
-    DECLARE
-        v_initial_hp      DOUBLE PRECISION;
-        v_after_potion_hp DOUBLE PRECISION;
-        v_effect_count    INTEGER;
-    BEGIN
-        -- Test using a health potion
-        BEGIN
-            UPDATE character SET hp = 50.0 WHERE id = 1;
+    declare
+        v_initial_hp      double precision;
+        v_after_potion_hp double precision;
+        v_effect_count    integer;
+    begin
+        -- test using a health potion
+        begin
+            update character set hp = 50.0 where id = 1;
 
-            SELECT get_attribute_value(1, 'HEALTH') INTO v_initial_hp;
+            select get_attribute_value(1, 'health') into v_initial_hp;
 
-            CALL sp_use_item(1, 3);
+            call sp_use_item(1, 3);
 
-            select get_attribute_value(1, 'HEALTH') into v_after_potion_hp;
-            ASSERT v_after_potion_hp > v_initial_hp, 'HELATH should increase after using health potion';
+            select get_attribute_value(1, 'health') into v_after_potion_hp;
+            assert v_after_potion_hp > v_initial_hp, 'helath should increase after using health potion';
 
-            SELECT COUNT(*)
-            INTO v_effect_count
-            FROM effect e
-                     JOIN character_under_effects cue ON e.id = cue.under_effects_id
-            WHERE cue.character_id = 1;
+            select count(*)
+            into v_effect_count
+            from effect e
+                     join character_under_effects cue on e.id = cue.under_effects_id
+            where cue.character_id = 1;
 
-            ASSERT v_effect_count > 0, 'Effect should be applied after using potion';
+            assert v_effect_count > 0, 'effect should be applied after using potion';
 
-            ASSERT NOT EXISTS (SELECT 1
-                               FROM inventory_items
-                               WHERE inventory_id = 1
-                                 AND items_id = 3), 'Item should be removed from inventory after use';
+            assert not exists (select 1
+                               from inventory_items
+                               where inventory_id = 1
+                                 and items_id = 3), 'item should be removed from inventory after use';
 
-            RAISE NOTICE 'Test 5.1: sp_use_item (potion) - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 5.1: sp_use_item (potion) - FAILED: %', SQLERRM;
-        END;
-    END
+            raise notice 'test 5.1: sp_use_item (potion) - passed';
+        exception
+            when others then
+                raise notice 'test 5.1: sp_use_item (potion) - failed: %', sqlerrm;
+        end;
+    end
 $$;
 
--- Test 6: Test loot procedure
-DO
+-- test 6: test loot procedure
+do
 $$
-    DECLARE
-        v_item_id                INTEGER;
-        v_inventory_count_before INTEGER;
-        v_inventory_count_after  INTEGER;
-        v_location_id            INTEGER := 1;
-        v_character_id           INTEGER := 2;
-        v_inventory_id           INTEGER;
+    declare
+        v_item_id                integer;
+        v_inventory_count_before integer;
+        v_inventory_count_after  integer;
+        v_location_id            integer := 1;
+        v_character_id           integer := 2;
+        v_inventory_id           integer;
         v_max_id                 integer;
-    BEGIN
-        SELECT inventory_id
-        INTO v_inventory_id
-        FROM character
-        WHERE id = v_character_id;
+    begin
+        select inventory_id
+        into v_inventory_id
+        from character
+        where id = v_character_id;
 
-        INSERT INTO item (type, weight, name) VALUES ('TROPHY', 1.0, 'Test Trophy') RETURNING id INTO v_item_id;
+        insert into item (type, weight, name) values ('trophy', 1.0, 'test trophy') returning id into v_item_id;
 
-        INSERT INTO location_items_on_the_floor (items_on_the_floor_id, location_id) VALUES (v_item_id, v_location_id);
+        insert into location_items_on_the_floor (items_on_the_floor_id, location_id) values (v_item_id, v_location_id);
 
-        INSERT INTO combat (location_id) VALUES (v_location_id);
+        insert into combat (location_id) values (v_location_id);
 
-        DELETE FROM location_characters WHERE characters_id = v_character_id;
-        INSERT INTO location_characters (characters_id, location_id) VALUES (v_character_id, v_location_id);
+        delete from location_characters where characters_id = v_character_id;
+        insert into location_characters (characters_id, location_id) values (v_character_id, v_location_id);
 
-        UPDATE character SET location_id = v_location_id WHERE id = v_character_id;
+        update character set location_id = v_location_id where id = v_character_id;
 
-        SELECT COUNT(*) INTO v_inventory_count_before FROM inventory_items WHERE inventory_id = v_inventory_id;
-        BEGIN
+        select count(*) into v_inventory_count_before from inventory_items where inventory_id = v_inventory_id;
+        begin
             select max(id) into v_max_id from combat;
-            CALL sp_loot_item(v_max_id, v_character_id, v_item_id);
+            call sp_loot_item(v_max_id, v_character_id, v_item_id);
 
-            SELECT COUNT(*) INTO v_inventory_count_after FROM inventory_items WHERE inventory_id = v_inventory_id;
-            ASSERT v_inventory_count_after = v_inventory_count_before + 1, 'Inventory should have one more item after looting';
+            select count(*) into v_inventory_count_after from inventory_items where inventory_id = v_inventory_id;
+            assert v_inventory_count_after = v_inventory_count_before + 1, 'inventory should have one more item after looting';
 
-            ASSERT NOT EXISTS (SELECT 1
-                               FROM location_items_on_the_floor
-                               WHERE items_on_the_floor_id = v_item_id), 'Item should be removed from floor after looting';
+            assert not exists (select 1
+                               from location_items_on_the_floor
+                               where items_on_the_floor_id = v_item_id), 'item should be removed from floor after looting';
 
-            ASSERT EXISTS (SELECT 1
-                           FROM inventory_items
-                           WHERE inventory_id = v_inventory_id
-                             AND items_id = v_item_id), 'Item should be added to inventory after looting';
+            assert exists (select 1
+                           from inventory_items
+                           where inventory_id = v_inventory_id
+                             and items_id = v_item_id), 'item should be added to inventory after looting';
 
-            RAISE NOTICE 'Test 6.1: sp_loot_item - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 6.1: sp_loot_item - FAILED: %', SQLERRM;
-        END;
-    END
+            raise notice 'test 6.1: sp_loot_item - passed';
+        exception
+            when others then
+                raise notice 'test 6.1: sp_loot_item - failed: %', sqlerrm;
+        end;
+    end
 $$;
 
 
--- Test 7: Test player death procedure
-DO
+-- test 7: test player death procedure
+do
 $$
-    DECLARE
-        v_initial_location_id INTEGER;
-        v_initial_hp          DOUBLE PRECISION;
-        v_initial_xp          DOUBLE PRECISION;
-        v_inventory_id        INTEGER;
-        v_items_count         INTEGER;
-        v_floor_items_count   INTEGER;
-    BEGIN
-        SELECT location_id, hp, xp, inventory_id
-        INTO v_initial_location_id, v_initial_hp, v_initial_xp, v_inventory_id
-        FROM character
-        WHERE id = 3;
+    declare
+        v_initial_location_id integer;
+        v_initial_hp          double precision;
+        v_initial_xp          double precision;
+        v_inventory_id        integer;
+        v_items_count         integer;
+        v_floor_items_count   integer;
+    begin
+        select location_id, hp, xp, inventory_id
+        into v_initial_location_id, v_initial_hp, v_initial_xp, v_inventory_id
+        from character
+        where id = 3;
 
-        SELECT COUNT(*)
-        INTO v_items_count
-        FROM inventory_items
-        WHERE inventory_id = v_inventory_id;
+        select count(*)
+        into v_items_count
+        from inventory_items
+        where inventory_id = v_inventory_id;
 
-        SELECT COUNT(*)
-        INTO v_floor_items_count
-        FROM location_items_on_the_floor
-        WHERE location_id = v_initial_location_id;
+        select count(*)
+        into v_floor_items_count
+        from location_items_on_the_floor
+        where location_id = v_initial_location_id;
 
-        RAISE NOTICE 'Before death: character has % items, location has % items on floor',
+        raise notice 'before death: character has % items, location has % items on floor',
             v_items_count, v_floor_items_count;
 
-        UPDATE character SET hp = 0 WHERE id = 3;
+        update character set hp = 0 where id = 3;
 
-        BEGIN
-            CALL sp_handle_player_death(3);
+        begin
+            call sp_handle_player_death(3);
 
-            SELECT COUNT(*)
-            INTO v_items_count
-            FROM inventory_items
-            WHERE inventory_id = v_inventory_id;
+            select count(*)
+            into v_items_count
+            from inventory_items
+            where inventory_id = v_inventory_id;
 
-            SELECT COUNT(*)
-            INTO v_floor_items_count
-            FROM location_items_on_the_floor
-            WHERE location_id = v_initial_location_id;
+            select count(*)
+            into v_floor_items_count
+            from location_items_on_the_floor
+            where location_id = v_initial_location_id;
 
-            RAISE NOTICE 'After death: character has % items, location has % items on floor',
+            raise notice 'after death: character has % items, location has % items on floor',
                 v_items_count, v_floor_items_count;
 
-            IF v_items_count = 0 THEN
-                RAISE NOTICE 'Test 7.1: Items removed from inventory - PASSED';
-            ELSE
-                RAISE NOTICE 'Test 7.1: Items not removed from inventory - FAILED';
-            END IF;
+            if v_items_count = 0 then
+                raise notice 'test 7.1: items removed from inventory - passed';
+            else
+                raise notice 'test 7.1: items not removed from inventory - failed';
+            end if;
 
-            IF v_floor_items_count > 0 THEN
-                RAISE NOTICE 'Test 7.2: Items dropped on location - PASSED';
-            ELSE
-                RAISE NOTICE 'Test 7.2: No items found on location - FAILED';
-            END IF;
+            if v_floor_items_count > 0 then
+                raise notice 'test 7.2: items dropped on location - passed';
+            else
+                raise notice 'test 7.2: no items found on location - failed';
+            end if;
 
-            RAISE NOTICE 'Test 7: sp_handle_player_death - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 7: sp_handle_player_death - FAILED: %', SQLERRM;
-        END;
-    END
+            raise notice 'test 7: sp_handle_player_death - passed';
+        exception
+            when others then
+                raise notice 'test 7: sp_handle_player_death - failed: %', sqlerrm;
+        end;
+    end
 $$;
--- Test 8: Test effect procedures
-DO
+-- test 8: test effect procedures
+do
 $$
-    DECLARE
-        v_effect_template_id          INTEGER;
-        v_effect_id                   INTEGER;
-        v_initial_strength            INTEGER;
-        v_after_effect_strength       INTEGER;
-        v_after_decrement_rounds_left INTEGER;
-        v_effect_count                INTEGER;
-    BEGIN
-        SELECT id
-        INTO v_effect_template_id
-        FROM effect_template
-        WHERE effect_name = 'Strength Boost';
+    declare
+        v_effect_template_id          integer;
+        v_effect_id                   integer;
+        v_initial_strength            integer;
+        v_after_effect_strength       integer;
+        v_after_decrement_rounds_left integer;
+        v_effect_count                integer;
+    begin
+        select id
+        into v_effect_template_id
+        from effect_template
+        where effect_name = 'strength boost';
 
-        v_initial_strength := get_attribute_value(1, 'STRENGTH');
+        v_initial_strength := get_attribute_value(1, 'strength');
 
-        -- Test applying effect from template
-        BEGIN
+        -- test applying effect from template
+        begin
             v_effect_id := sp_apply_effect_from_template(v_effect_template_id, 1);
 
-            ASSERT v_effect_id IS NOT NULL, 'Effect should be created';
+            assert v_effect_id is not null, 'effect should be created';
 
-            SELECT COUNT(*)
-            INTO v_effect_count
-            FROM character_under_effects
-            WHERE character_id = 1
-              AND under_effects_id = v_effect_id;
+            select count(*)
+            into v_effect_count
+            from character_under_effects
+            where character_id = 1
+              and under_effects_id = v_effect_id;
 
-            ASSERT v_effect_count = 1, 'Effect should be linked to character';
+            assert v_effect_count = 1, 'effect should be linked to character';
 
-            v_after_effect_strength := get_attribute_value(1, 'STRENGTH');
+            v_after_effect_strength := get_attribute_value(1, 'strength');
 
-            ASSERT v_after_effect_strength > v_initial_strength, 'Strength should be increased by effect';
+            assert v_after_effect_strength > v_initial_strength, 'strength should be increased by effect';
 
-            RAISE NOTICE 'Test 8.1: sp_apply_effect_from_template - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 8.1: sp_apply_effect_from_template - FAILED: %', SQLERRM;
-        END;
+            raise notice 'test 8.1: sp_apply_effect_from_template - passed';
+        exception
+            when others then
+                raise notice 'test 8.1: sp_apply_effect_from_template - failed: %', sqlerrm;
+        end;
 
-        -- Test decrementing effect rounds
-        BEGIN
-            SELECT rounds_left
-            INTO v_after_decrement_rounds_left
-            FROM effect
-            WHERE id = v_effect_id;
+        -- test decrementing effect rounds
+        begin
+            select rounds_left
+            into v_after_decrement_rounds_left
+            from effect
+            where id = v_effect_id;
 
-            CALL sp_decrement_effect_rounds();
+            call sp_decrement_effect_rounds();
 
-            SELECT rounds_left
-            INTO v_after_decrement_rounds_left
-            FROM effect
-            WHERE id = v_effect_id;
+            select rounds_left
+            into v_after_decrement_rounds_left
+            from effect
+            where id = v_effect_id;
 
-            ASSERT v_after_decrement_rounds_left = 2, 'Rounds left should decrease by 1';
+            assert v_after_decrement_rounds_left = 2, 'rounds left should decrease by 1';
 
-            CALL sp_decrement_effect_rounds();
-            CALL sp_decrement_effect_rounds();
+            call sp_decrement_effect_rounds();
+            call sp_decrement_effect_rounds();
 
-            ASSERT NOT EXISTS (SELECT 1
-                               FROM effect
-                               WHERE id = v_effect_id), 'Effect should be removed when rounds left reaches 0';
+            assert not exists (select 1
+                               from effect
+                               where id = v_effect_id), 'effect should be removed when rounds left reaches 0';
 
-            v_after_effect_strength := get_attribute_value(1, 'STRENGTH');
+            v_after_effect_strength := get_attribute_value(1, 'strength');
 
-            ASSERT v_after_effect_strength = v_initial_strength, 'Strength should be restored after effect expires';
+            assert v_after_effect_strength = v_initial_strength, 'strength should be restored after effect expires';
 
-            RAISE NOTICE 'Test 8.2: sp_decrement_effect_rounds - PASSED';
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Test 8.2: sp_decrement_effect_rounds - FAILED: %', SQLERRM;
-        END;
-    END
+            raise notice 'test 8.2: sp_decrement_effect_rounds - passed';
+        exception
+            when others then
+                raise notice 'test 8.2: sp_decrement_effect_rounds - failed: %', sqlerrm;
+        end;
+    end
 $$;

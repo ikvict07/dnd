@@ -1,4 +1,4 @@
--- View: Character Stats Summary
+-- view: character stats summary
 create or replace view character_stats_summary as
 select
     c.id as character_id,
@@ -22,7 +22,7 @@ from
         left join weapon w on c.weapon_id = w.id
         left join armor_set a on c.armor_set_id = a.id;
 
--- View: Character Attributes
+-- view: character attributes
 create or replace view character_attributes_view as
 select
     c.id as character_id,
@@ -34,7 +34,7 @@ from
         join character_attributes ca on c.id = ca.character_id
         join attribute a on ca.attributes_id = a.id;
 
--- View: Character Inventory Summary
+-- view: character inventory summary
 create or replace view character_inventory_summary as
 select
     c.id as character_id,
@@ -43,10 +43,10 @@ select
     get_inventory_weight(i.id::integer) as current_used,
     (i.capacity - get_inventory_weight(i.id::integer)) as available_space,
     count(it.id) as item_count,
-    sum(case when it.type = 'ARMOR'::item_type then 1 else 0 end) as armor_count,
-    sum(case when it.type = 'WEAPON'::item_type then 1 else 0 end) as weapon_count,
-    sum(case when it.type = 'POTION'::item_type then 1 else 0 end) as potion_count,
-    sum(case when it.type = 'TROPHY'::item_type then 1 else 0 end) as trophy_count
+    sum(case when it.type = 'armor'::item_type then 1 else 0 end) as armor_count,
+    sum(case when it.type = 'weapon'::item_type then 1 else 0 end) as weapon_count,
+    sum(case when it.type = 'potion'::item_type then 1 else 0 end) as potion_count,
+    sum(case when it.type = 'trophy'::item_type then 1 else 0 end) as trophy_count
 from
     character c
         join inventory i on c.inventory_id = i.id

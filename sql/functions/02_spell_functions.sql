@@ -24,7 +24,7 @@ begin
 
     v_primary_attribute_value := get_attribute_value(p_actor_id, v_primary_attribute);
 
-    if v_spell_impact_type = 'DAMAGE'::spell_impact_type then
+    if v_spell_impact_type = 'damage'::spell_impact_type then
         select coalesce(w.damage_multiplier, 0) into v_weapon_damage
         from character c
                  left join weapon w on c.weapon_id = w.id
@@ -82,7 +82,7 @@ declare
 begin
     v_attribute_bonus := calculate_attribute_bonus(p_character_id, p_attribute);
 
-    -- Perform a d20 roll and add the relevant attribute bonus
+    -- perform a d20 roll and add the relevant attribute bonus
     v_d20_roll := 1 + floor(random() * 20)::integer;
     v_hit_roll := v_d20_roll + v_attribute_bonus;
 
@@ -106,10 +106,10 @@ begin
     where c.id = p_character_id;
 
     case v_target_armor_class
-        when 'CLOTH' then v_armor_class_value := 10;
-        when 'LEATHER' then v_armor_class_value := 13;
-        when 'HEAVY' then v_armor_class_value := 16;
-        else v_armor_class_value := 5; -- Default if no armor
+        when 'cloth' then v_armor_class_value := 10;
+        when 'leather' then v_armor_class_value := 13;
+        when 'heavy' then v_armor_class_value := 16;
+        else v_armor_class_value := 5; -- default if no armor
         end case;
 
     return v_armor_class_value;
@@ -125,7 +125,7 @@ $$
 declare
     v_max_hp integer;
 begin
-    v_max_hp := 100 + get_attribute_value(p_character_id, 'HEALTH') * 5;
+    v_max_hp := 100 + get_attribute_value(p_character_id, 'health') * 5;
 
     return v_max_hp;
 end;
@@ -156,7 +156,7 @@ begin
 
     v_max_hp := calculate_max_hp(p_target_id);
 
-    if v_spell_impact_type = 'HEALING' then
+    if v_spell_impact_type = 'healing' then
         update character
         set hp = least(v_max_hp, hp + v_spell_impact)
         where id = p_target_id;
@@ -170,7 +170,7 @@ begin
         end if;
     end if;
 
-    if v_effect_template_id is not null and (p_hit_roll >= v_armor_class_value or v_spell_impact_type = 'HEALING') then
+    if v_effect_template_id is not null and (p_hit_roll >= v_armor_class_value or v_spell_impact_type = 'healing') then
         select duration_rounds into v_duration_rounds
         from effect_template
         where id = v_effect_template_id;

@@ -41,11 +41,11 @@ begin
     where ca.character_id = p_character_id
       and a.attribute_type = v_affected_attribute_type;
 
-    if v_effect_type = 'BUFF' then
+    if v_effect_type = 'buff' then
         update attribute
         set value = value + v_effect_value
         where id = v_attribute_id;
-    elsif v_effect_type = 'DE_BUFF' then
+    elsif v_effect_type = 'de_buff' then
         update attribute
         set value = value - v_effect_value
         where id = v_attribute_id;
@@ -92,11 +92,11 @@ begin
     where ca.character_id = v_character_id
       and a.attribute_type = v_affected_attribute_type;
 
-    if v_effect_type = 'BUFF' then
+    if v_effect_type = 'buff' then
         update attribute
         set value = value - v_effect_value
         where id = v_attribute_id;
-    elsif v_effect_type = 'DE_BUFF' then
+    elsif v_effect_type = 'de_buff' then
         update attribute
         set value = value + v_effect_value
         where id = v_attribute_id;
@@ -126,7 +126,6 @@ begin
         from effect e
         where e.rounds_left <= 0
         loop
-            -- Cancel each expired effect
             call sp_cancel_effect(v_effect_record.id);
         end loop;
 end;

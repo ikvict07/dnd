@@ -1,4 +1,4 @@
--- View: Spell Usage Statistics
+-- view: spell usage statistics
 create or replace view spell_usage_statistics as
 select
     s.id as spell_id,
@@ -16,16 +16,16 @@ from
 group by
     s.id, s.name, s.spell_category, s.spell_element, s.spell_impact_type;
 
--- View: Location Item Summary
+-- view: location item summary
 create or replace view location_item_summary as
 select
     l.id as location_id,
     l.name as location_name,
     count(it.id) as items_on_floor,
-    sum(case when it.type = 'ARMOR' then 1 else 0 end) as armor_count,
-    sum(case when it.type = 'WEAPON' then 1 else 0 end) as weapon_count,
-    sum(case when it.type = 'POTION' then 1 else 0 end) as potion_count,
-    sum(case when it.type = 'TROPHY' then 1 else 0 end) as trophy_count,
+    sum(case when it.type = 'armor' then 1 else 0 end) as armor_count,
+    sum(case when it.type = 'weapon' then 1 else 0 end) as weapon_count,
+    sum(case when it.type = 'potion' then 1 else 0 end) as potion_count,
+    sum(case when it.type = 'trophy' then 1 else 0 end) as trophy_count,
     sum(it.weight) as total_weight
 from
     location l
@@ -34,7 +34,7 @@ from
 group by
     l.id, l.name;
 
--- View: Effect Analysis
+-- view: effect analysis
 create or replace view effect_analysis as
 select
     et.id as effect_template_id,

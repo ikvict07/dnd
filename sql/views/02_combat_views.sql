@@ -1,4 +1,4 @@
--- View: Combat Activity Summary
+-- view: combat activity summary
 create or replace view combat_activity_summary as
 select
     cl.actor_id,
@@ -16,16 +16,16 @@ from
 group by
     cl.actor_id, c.name;
 
--- View: Damage Received Summary
+-- view: damage received summary
 create or replace view damage_received_summary as
 select
     cl.target_id,
     c.name as target_name,
     count(*) as times_targeted,
-    sum(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as total_damage_received,
-    sum(cl.impact) filter (where s.spell_impact_type = 'HEALING') as total_healing_received,
-    avg(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as avg_damage_per_hit,
-    max(cl.impact) filter (where s.spell_impact_type = 'HEALING') as max_damage_received
+    sum(cl.impact) filter (where s.spell_impact_type = 'damage') as total_damage_received,
+    sum(cl.impact) filter (where s.spell_impact_type = 'healing') as total_healing_received,
+    avg(cl.impact) filter (where s.spell_impact_type = 'damage') as avg_damage_per_hit,
+    max(cl.impact) filter (where s.spell_impact_type = 'healing') as max_damage_received
 from
     combat_log cl
         join character c on cl.target_id = c.id
@@ -33,7 +33,7 @@ from
 group by
     cl.target_id, c.name;
 
--- View: Current Combat State
+-- view: current combat state
 create or replace view current_combat_state as
 select
     l.id as location_id,
@@ -53,7 +53,7 @@ from
 group by
     l.id, l.name, r.id, r.index;
 
--- View: Combat Round Summary
+-- view: combat round summary
 create or replace view combat_round_summary as
 select
     r.id as round_id,
@@ -62,8 +62,8 @@ select
     l.name as location_name,
     count(distinct cl.actor_id) as active_characters,
     count(cl.id) as total_actions,
-    sum(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as total_damage_dealt,
-    sum(cl.impact) filter (where s.spell_impact_type = 'HEALING') as total_healing_done,
+    sum(cl.impact) filter (where s.spell_impact_type = 'damage') as total_damage_dealt,
+    sum(cl.impact) filter (where s.spell_impact_type = 'healing') as total_healing_done,
     sum(cl.action_points_spent) as total_ap_spent
 from
     round r

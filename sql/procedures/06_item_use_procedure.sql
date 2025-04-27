@@ -20,14 +20,14 @@ begin
     where id = p_character_id;
 
     if v_inventory_id is null then
-        raise exception 'Character not found';
+        raise exception 'character not found';
     end if;
 
     if not exists (select 1
                    from inventory_items
                    where inventory_id = v_inventory_id
                      and items_id = p_item_id) then
-        raise exception 'Item is not in the character''s inventory';
+        raise exception 'item is not in the character''s inventory';
     end if;
 
     select i.name, i.type
@@ -35,14 +35,14 @@ begin
     from item i
     where i.id = p_item_id;
 
-    if v_item_type = 'POTION'::item_type then
+    if v_item_type = 'potion'::item_type then
         select p.id, p.cause_effect_id
         into v_potion_id, v_effect_template_id
         from potion p
         where p.item_id = p_item_id;
 
         if v_effect_template_id is null then
-            raise exception 'Potion has no effect template';
+            raise exception 'potion has no effect template';
         end if;
 
         v_effect_id := sp_apply_effect_from_template(v_effect_template_id, p_character_id);
@@ -72,7 +72,7 @@ begin
           and r.is_finished = false
         limit 1;
 
-        -- Create a log entry
+        -- create a log entry
         insert into combat_log (action_points_spent,
                                 impact,
                                 description,
@@ -80,7 +80,7 @@ begin
                                 target_id)
         values (0,
                 0,
-                'Character used item: ' || v_item_name,
+                'character used item: ' || v_item_name,
                 p_character_id,
                 p_character_id
                )

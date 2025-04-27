@@ -36,7 +36,7 @@ begin
             insert into inventory_items (inventory_id, items_id)
             values (p_inventory_id, p_item_id);
         else
-            raise exception 'Inventory capacity exceeded';
+            raise exception 'inventory capacity exceeded';
         end if;
     end;
 end;

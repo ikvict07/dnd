@@ -19,7 +19,7 @@ begin
     where id = p_combat_id;
 
     if v_combat_location_id is null then
-        raise exception 'Combat session not found';
+        raise exception 'combat session not found';
     end if;
 
     select location_id, character_class_id
@@ -28,7 +28,7 @@ begin
     where id = p_character_id;
 
     if v_character_location_id != v_combat_location_id then
-        raise exception 'Character is not in the combat location';
+        raise exception 'character is not in the combat location';
     end if;
 
     select r.id
@@ -40,10 +40,10 @@ begin
     limit 1;
 
     if v_active_round_id is null then
-        raise exception 'No active round found for this combat';
+        raise exception 'no active round found for this combat';
     end if;
 
-    v_intelligence_value := get_attribute_value(p_character_id, 'INTELLIGENCE');
+    v_intelligence_value := get_attribute_value(p_character_id, 'intelligence');
 
     select action_points_multiplier * 10
     into v_base_ap
@@ -66,7 +66,7 @@ begin
                             target_id)
     values (0,
             0,
-            'Character entered combat',
+            'character entered combat',
             p_character_id,
             p_character_id
            )
@@ -100,7 +100,7 @@ begin
     where id = p_combat_id;
 
     if v_combat_location_id is null then
-        raise exception 'Combat session not found';
+        raise exception 'combat session not found';
     end if;
 
     select r.id, r.index
@@ -112,7 +112,7 @@ begin
     limit 1;
 
     if v_current_round_id is null then
-        raise exception 'No active round found for this combat';
+        raise exception 'no active round found for this combat';
     end if;
 
     update round
@@ -132,7 +132,7 @@ begin
                                         join round_participants rp on c.id = rp.participants_id
                                where rp.round_id = v_current_round_id)
         loop
-            v_intelligence_value := get_attribute_value(v_character_record.id::integer, 'INTELLIGENCE'::attribute_type);
+            v_intelligence_value := get_attribute_value(v_character_record.id::integer, 'intelligence'::attribute_type);
 
             select action_points_multiplier * 10
             into v_base_ap
@@ -158,13 +158,13 @@ begin
                             target_id)
     values (0,
             0,
-            'Round reset: Round ' || v_current_round_number || ' ended, Round ' || (v_current_round_number + 1) ||
+            'round reset: round ' || v_current_round_number || ' ended, round ' || (v_current_round_number + 1) ||
             ' started',
             null,
             null)
     returning id into v_log_id;
 
-    -- Add log to new round
+    -- add log to new round
     insert into round_logs (logs_id, round_id)
     values (v_log_id, v_new_round_id);
 end;
