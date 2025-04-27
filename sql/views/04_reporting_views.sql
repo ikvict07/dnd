@@ -36,7 +36,7 @@ from character c
          left join class cl on c.character_class_id = cl.id
          left join combat_log cl2 on c.id = cl2.actor_id
          left join spell s on cl2.action_id = s.id
-where s.spell_impact_type = 1
+where s.spell_impact_type = 'DAMAGE'
 group by c.id, c.name, c.lvl, cl.name
 order by total_damage_dealt desc;
 
@@ -49,25 +49,25 @@ select c.id                                                                    a
        c.hp                                                                    as current_hp,
        cl.name                                                                 as class_name,
        -- Damage dealt
-       coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 1), 0)     as total_damage_dealt,
+       coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 'DAMAGE'), 0)     as total_damage_dealt,
        -- Healing done
-       coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 2), 0)     as total_healing_done,
+       coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 'HEALING'), 0)     as total_healing_done,
        -- Successful attacks
-       count(cl2.id) filter (where cl2.impact > 0 and s.spell_impact_type = 1) as successful_attacks,
+       count(cl2.id) filter (where cl2.impact > 0 and s.spell_impact_type = 'DAMAGE') as successful_attacks,
        -- Damage received
        coalesce((select sum(cl3.impact)
                  from combat_log cl3
                           join spell s2 on cl3.action_id = s2.id
                  where cl3.target_id = c.id
-                   and s2.spell_impact_type = 1), 0)                           as damage_received,
+                   and s2.spell_impact_type = 'DAMAGE'), 0)                           as damage_received,
        -- Performance score (custom formula)
-       coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 1), 0) +
-       coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 2), 0) * 0.5 -
+       coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 'DAMAGE'), 0) +
+       coalesce(sum(cl2.impact) filter (where s.spell_impact_type = 'HEALING'), 0) * 0.5 -
        coalesce((select sum(cl3.impact)
                  from combat_log cl3
                           join spell s2 on cl3.action_id = s2.id
                  where cl3.target_id = c.id
-                   and s2.spell_impact_type = 1), 0) * 0.3 +
+                   and s2.spell_impact_type = 'DAMAGE'), 0) * 0.3 +
        c.hp * 0.2                                                              as performance_score
 from character c
          left join class cl on c.character_class_id = cl.id
@@ -83,11 +83,11 @@ select c.id                                                  as combat_id,
        l.name                                                as location_name,
        count(distinct r.id)                                  as total_rounds,
        count(distinct cl.actor_id)                           as total_participants,
-       sum(cl.impact) filter (where s.spell_impact_type = 1) as total_damage_dealt,
-       sum(cl.impact) filter (where s.spell_impact_type = 2) as total_healing_done,
-       round(sum(cl.impact) filter (where s.spell_impact_type = 1)::numeric /
+       sum(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as total_damage_dealt,
+       sum(cl.impact) filter (where s.spell_impact_type = 'HEALING') as total_healing_done,
+       round(sum(cl.impact) filter (where s.spell_impact_type = 'DAMAGE')::numeric /
              nullif(count(distinct r.id), 0), 2)             as avg_damage_per_round,
-       max(cl.impact) filter (where s.spell_impact_type = 1) as max_damage_in_single_action
+       max(cl.impact) filter (where s.spell_impact_type = 'DAMAGE') as max_damage_in_single_action
 from combat c
          join location l on c.location_id = l.id
          join combat_combat_rounds ccr on c.id = ccr.combat_id

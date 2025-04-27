@@ -1,7 +1,7 @@
 -- DnD Combat System Database Schema - Miscellaneous Views
 
 -- View: Spell Usage Statistics
-create view spell_usage_statistics as
+create or replace view spell_usage_statistics as
 select
     s.id as spell_id,
     s.name as spell_name,
@@ -19,7 +19,7 @@ group by
     s.id, s.name, s.spell_category, s.spell_element, s.spell_impact_type;
 
 -- View: Location Item Summary
-create view location_item_summary as
+create or replace view location_item_summary as
 select
     l.id as location_id,
     l.name as location_name,
@@ -37,7 +37,7 @@ group by
     l.id, l.name;
 
 -- View: Effect Analysis
-create view effect_analysis as
+create or replace view effect_analysis as
 select
     et.id as effect_template_id,
     et.effect_name,

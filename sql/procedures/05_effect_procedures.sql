@@ -62,9 +62,9 @@ end;
 $$ language plpgsql;
 
 -- Procedure to cancel/remove an effect from a character
-create or replace function sp_cancel_effect(
+create or replace procedure sp_cancel_effect(
     p_effect_id integer
-) returns void as
+) as
 $$
 declare
     v_character_id            integer;

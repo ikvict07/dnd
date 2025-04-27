@@ -1,7 +1,7 @@
 -- Procedure to handle a character's death
-create or replace function sp_handle_player_death(
+create or replace procedure sp_handle_player_death(
     p_character_id bigint
-) returns void as $$
+) as $$
 declare
     v_location_id bigint;
     v_inventory_id bigint;
@@ -57,7 +57,7 @@ begin
 end;
 $$ language plpgsql;
 
-alter function sp_handle_player_death(bigint) owner to postgres;
+alter procedure sp_handle_player_death(bigint) owner to postgres;
 
 
 create or replace function is_character_dead(

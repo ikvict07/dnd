@@ -1,7 +1,7 @@
 -- Function to allow a character to rest outside combat
-create or replace function sp_rest_character(
+create or replace procedure sp_rest_character(
     p_character_id integer
-) returns void as $$
+)  as $$
 declare
     v_is_pvp boolean;
     v_healing_spell_id integer;
@@ -42,4 +42,4 @@ begin
 end;
 $$ language plpgsql;
 
-alter function sp_rest_character(integer) owner to postgres;
+alter procedure sp_rest_character(integer) owner to postgres;

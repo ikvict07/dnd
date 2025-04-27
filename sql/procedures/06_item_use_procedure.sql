@@ -1,7 +1,7 @@
-create or replace function sp_use_item(
+create or replace procedure sp_use_item(
     p_character_id integer,
     p_item_id integer
-) returns void as
+) as
 $$
 declare
     v_inventory_id       integer;
@@ -107,4 +107,4 @@ begin
 end;
 $$ language plpgsql;
 
-alter function sp_use_item(integer, integer) owner to postgres;
+alter procedure sp_use_item(integer, integer) owner to postgres;

@@ -1,8 +1,8 @@
-create or replace function sp_cast_spell(
+create or replace procedure sp_cast_spell(
     p_caster_id integer,
     p_target_id integer,
     p_spell_id integer
-) returns void as
+) as
 $$
 declare
     v_required_ap        integer;

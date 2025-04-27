@@ -1,8 +1,8 @@
 -- Function to register a character into an ongoing combat session
-create or replace function sp_enter_combat(
+create or replace procedure sp_enter_combat(
     p_combat_id integer,
     p_character_id integer
-) returns void as
+) as
 $$
 declare
     v_combat_location_id    integer;
@@ -92,12 +92,12 @@ begin
 end;
 $$ language plpgsql;
 
-alter function sp_enter_combat(integer, integer) owner to postgres;
+alter procedure sp_enter_combat(integer, integer) owner to postgres;
 
 -- Function to reset the combat state at the beginning of a new round
-create or replace function sp_reset_round(
+create or replace procedure sp_reset_round(
     p_combat_id integer
-) returns void as
+)  as
 $$
 declare
     v_combat_location_id   integer;
@@ -199,4 +199,4 @@ begin
 end;
 $$ language plpgsql;
 
-alter function sp_reset_round(integer) owner to postgres;
+alter procedure sp_reset_round(integer) owner to postgres;
